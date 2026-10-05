@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#17324d">
+<link rel="manifest" href="manifest.json">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<title>WorkBoard — Tâches</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f3f6f9;color:#183044;font-family:Arial,sans-serif}
+.app{max-width:1100px;margin:auto;padding:18px 18px 40px}
+header{background:#17324d;color:#fff;border-radius:20px;padding:22px;margin-bottom:16px;display:flex;justify-content:space-between;gap:15px;align-items:center}
+h1{margin:0;font-size:30px}.sub{opacity:.75;margin-top:5px}.date{font-size:15px;text-align:right}
+.grid{display:grid;grid-template-columns:1fr 2fr;gap:16px}.card{background:#fff;border-radius:18px;padding:18px;box-shadow:0 4px 18px #17324d12}
+h2{font-size:18px;margin:0 0 14px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:#f4f7fa;border-radius:14px;padding:13px}.num{font-size:25px;font-weight:700}.lbl{font-size:12px;color:#71808d;margin-top:3px}
+.bar{height:12px;background:#e1e7ec;border-radius:20px;overflow:hidden;margin:10px 0}.fill{height:100%;width:0;background:#39845a;transition:.25s}
+.add{display:grid;grid-template-columns:1fr 130px;gap:9px;margin-bottom:14px}.add input,.add select,.note input{width:100%;padding:13px;border:1px solid #d4dce3;border-radius:11px;font-size:16px}
+button{border:0;border-radius:11px;padding:12px 15px;font-weight:700;font-size:15px;cursor:pointer}.primary{background:#286ca8;color:white}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:13px}.filters button{background:#eaf0f5;color:#29465d}.filters button.active{background:#17324d;color:white}
+.task{display:grid;grid-template-columns:45px 1fr auto;gap:12px;align-items:center;padding:13px 4px;border-bottom:1px solid #edf0f3}
+.check{width:28px;height:28px;accent-color:#39845a}.tasktitle{font-size:17px;font-weight:600}.done{text-decoration:line-through;color:#89939d}
+.meta{font-size:12px;color:#788692;margin-top:4px}.badge{padding:5px 8px;border-radius:8px;font-size:11px;font-weight:700;background:#edf2f6}.high{background:#fbe9e7;color:#a33b31}.med{background:#fff3d7;color:#8b6500}.low{background:#e8f3ea;color:#357344}
+.delete{background:transparent;color:#a34a43;font-size:20px;padding:6px}
+textarea{width:100%;min-height:120px;border:1px solid #d4dce3;border-radius:12px;padding:12px;font:inherit;resize:vertical}
+@media(max-width:800px){.grid{grid-template-columns:1fr}.date{text-align:left}.add{grid-template-columns:1fr}.task{grid-template-columns:42px 1fr auto}}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+<div><h1>WorkBoard</h1><div class="sub">Gestion des tâches professionnelles</div></div>
+<div class="date" id="date"></div>
+</header>
+
+<div class="grid">
+<section>
+<div class="card">
+<h2>Vue du jour</h2>
+<div class="stats">
+<div class="stat"><div class="num" id="total">0</div><div class="lbl">Tâches</div></div>
+<div class="stat"><div class="num" id="done">0</div><div class="lbl">Terminées</div></div>
+<div class="stat"><div class="num" id="remain">0</div><div class="lbl">À faire</div></div>
+</div>
+<div style="margin-top:18px;font-weight:700;display:flex;justify-content:space-between"><span>Progression</span><span id="pct">0%</span></div>
+<div class="bar"><div class="fill" id="fill"></div></div>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2>Priorités</h2>
+<div id="prioritySummary">Aucune tâche prioritaire.</div>
+</div>
+
+<div class="card" style="margin-top:16px">
+<h2>Notes de travail</h2>
+<textarea id="notes" placeholder="Réunions, informations importantes, rappels..."></textarea>
+</div>
+</section>
+
+<section>
+<div class="card">
+<h2>Ajouter une tâche</h2>
+<div class="add">
+<input id="taskInput" placeholder="Ex. Envoyer le dossier au client..." autocomplete="off">
+<select id="priority"><option value="high">Priorité haute</option><option value="med" selected>Priorité normale</option><option value="low">Priorité basse</option></select>
+</div>
+<button class="primary" onclick="addTask()">+ Ajouter la tâche</button>
+</div>
+
+<div class="card" style="margin-top:16px">
+<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+<h2 style="margin:0">Tâches</h2>
+<div class="filters">
+<button id="f-all" class="active" onclick="setFilter('all')">Toutes</button>
+<button id="f-todo" onclick="setFilter('todo')">À faire</button>
+<button id="f-done" onclick="setFilter('done')">Terminées</button>
+</div>
+</div>
+<div id="tasks"></div>
+</div>
+
+<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+<button onclick="clearDone()" style="background:#e8edf2">Supprimer les terminées</button>
+<button onclick="newDay()" style="background:#e8edf2">Nouvelle journée</button>
+</div>
+</section>
+</div>
+</div>
+
+<script>
+const K="workboard_tasks_v2",N="workboard_notes_v2",D="workboard_day_v2";
+let today=new Date().toISOString().slice(0,10);
+let tasks=JSON.parse(localStorage.getItem(K)||"null");
+if(!tasks || localStorage.getItem(D)!==today){
+ tasks=[
+ {text:"Consulter les emails et messages importants",priority:"high",done:false},
+ {text:"Traiter la tâche professionnelle prioritaire",priority:"high",done:false},
+ {text:"Avancer sur le dossier en cours",priority:"med",done:false},
+ {text:"Faire les suivis nécessaires",priority:"med",done:false},
+ {text:"Préparer les tâches du lendemain",priority:"low",done:false}
+ ];localStorage.setItem(D,today);save(false);
+}
+let filter="all";
+const notes=document.getElementById("notes");notes.value=localStorage.getItem(N)||"";
+notes.addEventListener("input",()=>localStorage.setItem(N,notes.value));
+document.getElementById("date").textContent=new Intl.DateTimeFormat("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());
+
+function save(r=true){localStorage.setItem(K,JSON.stringify(tasks));if(r)render()}
+function addTask(){let i=document.getElementById("taskInput"),p=document.getElementById("priority"),t=i.value.trim();if(!t)return;tasks.push({text:t,priority:p.value,done:false});i.value="";save();i.focus()}
+document.getElementById("taskInput").addEventListener("keydown",e=>{if(e.key==="Enter")addTask()});
+function setFilter(f){filter=f;document.querySelectorAll(".filters button").forEach(b=>b.classList.remove("active"));document.getElementById("f-"+f).classList.add("active");render()}
+function render(){
+ const box=document.getElementById("tasks");box.innerHTML="";
+ let shown=tasks.filter(t=>filter==="all"||filter==="todo"&&!t.done||filter==="done"&&t.done);
+ if(!shown.length){box.innerHTML='<div style="padding:25px;text-align:center;color:#7b8791">Aucune tâche dans cette vue.</div>'}
+ shown.forEach(t=>{
+  let idx=tasks.indexOf(t),row=document.createElement("div");row.className="task";
+  let cb=document.createElement("input");cb.type="checkbox";cb.className="check";cb.checked=t.done;cb.onchange=()=>{t.done=cb.checked;save()};
+  let mid=document.createElement("div"),title=document.createElement("div");title.className="tasktitle"+(t.done?" done":"");title.textContent=t.text;
+  let meta=document.createElement("div");meta.className="meta";meta.textContent=t.done?"Terminée":"À traiter";
+  mid.append(title,meta);
+  let right=document.createElement("div");let b=document.createElement("span");b.className="badge "+t.priority;b.textContent=t.priority==="high"?"URGENT":t.priority==="med"?"NORMAL":"BASSE";right.appendChild(b);
+  let del=document.createElement("button");del.className="delete";del.textContent="×";del.onclick=()=>{tasks.splice(idx,1);save()};right.appendChild(del);
+  row.append(cb,mid,right);box.appendChild(row);
+ });
+ let total=tasks.length,done=tasks.filter(t=>t.done).length;
+ document.getElementById("total").textContent=total;document.getElementById("done").textContent=done;document.getElementById("remain").textContent=total-done;
+ let pct=total?Math.round(done/total*100):0;document.getElementById("pct").textContent=pct+"%";document.getElementById("fill").style.width=pct+"%";
+ let high=tasks.filter(t=>!t.done&&t.priority==="high").length;
+ document.getElementById("prioritySummary").innerHTML=high?`<strong>${high}</strong> tâche(s) à priorité haute à traiter.`:"Aucune tâche prioritaire en attente. 👍";
+}
+function clearDone(){tasks=tasks.filter(t=>!t.done);save()}
+function newDay(){if(confirm("Créer une nouvelle journée ? Les tâches actuelles seront supprimées.")){tasks=[];localStorage.setItem(D,today);save()}}
+if("serviceWorker"in navigator)navigator.serviceWorker.register("sw.js");
+render();
+</script>
+</body>
+</html>

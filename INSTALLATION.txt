@@ -1,0 +1,25 @@
+WORKBOARD — PWA
+
+Cette version est une Progressive Web App.
+
+INSTALLATION SUR XIAOMI / ANDROID
+1. Héberge le dossier sur un site HTTPS.
+2. Ouvre l'adresse dans Chrome sur la tablette.
+3. Dans Chrome, ouvre le menu ⋮.
+4. Choisis « Installer l'application » ou « Ajouter à l'écran d'accueil ».
+5. Une icône WorkBoard apparaît sur l'écran d'accueil.
+6. Une fois chargée, l'application peut fonctionner hors connexion.
+
+IMPORTANT
+Ouvrir index.html directement depuis « Fichiers » ne suffit pas pour installer une PWA.
+Elle doit être servie par HTTPS (ou localhost).
+
+FONCTIONS
+- Tâches professionnelles
+- Priorités
+- Cases cochables au doigt
+- Progression de la journée
+- Filtres
+- Notes
+- Sauvegarde locale
+- Mode hors connexion
