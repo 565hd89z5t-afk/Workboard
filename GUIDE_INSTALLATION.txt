@@ -1,0 +1,23 @@
+WORKBOARD SYNCHRONISÉ — INSTALLATION
+
+1) Firebase : https://console.firebase.google.com/
+2) Crée un projet Firebase.
+3) Ajoute une application Web (icône </>) et récupère sa configuration.
+4) Authentication > Sign-in method > active Email/Password.
+5) Firestore Database > Create database.
+6) Firestore > Rules : utilise ces règles :
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/days/{dayId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+
+7) Ouvre firebase-config.js et remplace A_REMPLACER par les valeurs de ta configuration Firebase.
+8) Envoie les fichiers de ce dossier sur ton dépôt GitHub Pages.
+9) Ouvre la même adresse sur PC et tablette et connecte les deux avec le MÊME compte.
+
+Les tâches du jour et les notes se synchronisent alors en temps réel entre les appareils.
