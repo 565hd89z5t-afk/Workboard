@@ -52,8 +52,8 @@ const $=x=>document.getElementById(x);
 $("date").textContent=new Intl.DateTimeFormat("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(new Date());
 function showMsg(x){$("loginMsg").textContent=x;$("loginMsg").style.display="block"}
 function friendly(c){if(c.includes("invalid-credential"))return"e-mail ou mot de passe incorrect.";if(c.includes("email-already"))return"ce compte existe déjà.";if(c.includes("weak-password"))return"mot de passe trop court.";return"Une erreur est survenue."}
-$("signin").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value)}catch(e){showMsg(friendly(e.code))}};
-$("signup").onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);showMsg("Compte créé.")}catch(e){showMsg(friendly(e.code))}};
+$("signin").onclick=async()=>{try{await signInWithEmailAndPassword(auth,$("email").value.trim(),$("password").value)}catch(e){showMsg(e.code + " — " + e.message)}
+$("signup").onclick=async()=>{try{await createUserWithEmailAndPassword(auth,$("email").value.trim(),$("password").value);showMsg("Compte créé.")}catch(e){showMsg(e.code + " — " + e.message)}
 $("logout").onclick=()=>signOut(auth);
 
 onAuthStateChanged(auth,u=>{
