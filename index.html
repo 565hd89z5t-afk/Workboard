@@ -1,141 +1,710 @@
 <!doctype html>
+
 <html lang="fr">
 <head>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+
 <meta name="theme-color" content="#17324d">
-<meta name="description" content="WorkBoard - tâches professionnelles synchronisées">
+
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
+
 <title>WorkBoard — Synchronisé</title>
 
 <style>
-*{box-sizing:border-box}
-body{margin:0;background:#f3f6f9;color:#183044;font-family:Arial,sans-serif}
-.app{max-width:1100px;margin:auto;padding:18px}
-.card{background:#fff;border-radius:18px;padding:18px;box-shadow:0 4px 18px #17324d12;margin-bottom:16px}
-header{background:#17324d;color:#fff;border-radius:20px;padding:20px;margin-bottom:16px;display:flex;justify-content:space-between}
-h1{margin:0;font-size:30px}
-.sub,.small{opacity:.75;font-size:13px}
-.grid{display:grid;grid-template-columns:1fr 2fr;gap:16px}
-.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.stat{background:#f4f7fa;border-radius:14px;padding:13px}
-.num{font-size:25px;font-weight:700}
-.bar{height:12px;background:#e1e7ec;border-radius:20px;overflow:hidden;margin:10px 0}
-.fill{height:100%;width:0;background:#39845a}
-.add{display:grid;grid-template-columns:1fr 150px;gap:9px}
-input,select,textarea{width:100%;padding:13px;border:1px solid #d4dce3;border-radius:11px;font-size:16px}
-textarea{min-height:120px;resize:vertical}
-button{border:0;border-radius:11px;padding:12px 15px;font-weight:700;font-size:15px;cursor:pointer}
-.primary{background:#286ca8;color:white}
-.secondary{background:#e8eef3;color:#29465d}
-.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-.filters button.active{background:#17324d;color:white}
-.task{display:grid;grid-template-columns:45px 1fr auto;gap:12px;align-items:center;padding:13px 4px;border-bottom:1px solid #edf0f3}
-.check{width:28px;height:28px;accent-color:#39845a}
-.tasktitle{font-size:17px;font-weight:600}
-.done{text-decoration:line-through;color:#89939d}
-.badge{padding:5px 8px;border-radius:8px;font-size:11px;font-weight:700}
-.high{background:#fbe9e7;color:#a33b31}
-.med{background:#fff3d7;color:#8b6500}
-.low{background:#e8f3ea;color:#357344}
-.delete{background:transparent;color:#a34a43;font-size:20px}
-.login{max-width:440px;margin:8vh auto}
-.login input{margin-bottom:10px}
-.login button{width:100%;margin-top:7px}
-.msg{padding:10px;background:#f8ecea;color:#963d35;border-radius:10px;margin-top:10px}
-#app{display:none}
-.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#e0a72b;margin-right:6px}
-.online .dot{background:#48a868}
+
+*{
+box-sizing:border-box
+}
+
+body{
+margin:0;
+background:#f3f6f9;
+color:#183044;
+font-family:Arial,sans-serif
+}
+
+.app{
+max-width:1100px;
+margin:auto;
+padding:18px
+}
+
+.card{
+background:#fff;
+border-radius:18px;
+padding:18px;
+box-shadow:0 4px 18px #17324d12;
+margin-bottom:16px
+}
+
+header{
+background:#17324d;
+color:#fff;
+border-radius:20px;
+padding:20px;
+margin-bottom:16px;
+display:flex;
+justify-content:space-between
+}
+
+h1{
+margin:0;
+font-size:30px
+}
+
+.sub,.small{
+opacity:.75;
+font-size:13px
+}
+
+.grid{
+display:grid;
+grid-template-columns:1fr 2fr;
+gap:16px
+}
+
+.stats{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:10px
+}
+
+.stat{
+background:#f4f7fa;
+border-radius:14px;
+padding:13px
+}
+
+.num{
+font-size:25px;
+font-weight:700
+}
+
+.bar{
+height:12px;
+background:#e1e7ec;
+border-radius:20px;
+overflow:hidden;
+margin:10px 0
+}
+
+.fill{
+height:100%;
+width:0;
+background:#39845a
+}
+
+.add{
+display:grid;
+grid-template-columns:1fr 150px 1fr;
+gap:9px
+}
+
+input,select,textarea{
+width:100%;
+padding:13px;
+border:1px solid #d4dce3;
+border-radius:11px;
+font-size:16px
+}
+
+textarea{
+min-height:120px;
+resize:vertical
+}
+
+button{
+border:0;
+border-radius:11px;
+padding:12px 15px;
+font-weight:700;
+font-size:15px;
+cursor:pointer
+}
+
+.primary{
+background:#286ca8;
+color:white
+}
+
+.secondary{
+background:#e8eef3;
+color:#29465d
+}
+
+.filters{
+display:flex;
+gap:8px;
+flex-wrap:wrap;
+margin-bottom:12px
+}
+
+.filters button.active{
+background:#17324d;
+color:white
+}
+
+
+/* ================================================= */
+/* TACHES */
+/* ================================================= */
+
+.task{
+display:grid;
+grid-template-columns:45px 1fr auto;
+gap:12px;
+align-items:start;
+padding:15px 4px;
+border-bottom:1px solid #edf0f3
+}
+
+.check{
+width:28px;
+height:28px;
+accent-color:#39845a;
+margin-top:2px
+}
+
+.tasktitle{
+font-size:17px;
+font-weight:600
+}
+
+.done{
+text-decoration:line-through;
+color:#89939d
+}
+
+
+/* ================================================= */
+/* COMMENTAIRE */
+/* ================================================= */
+
+.task-comment{
+margin-top:10px;
+display:flex;
+flex-direction:column;
+gap:5px
+}
+
+.task-comment-label{
+font-size:12px;
+font-weight:700;
+color:#71808c
+}
+
+.task-comment-input{
+width:100%;
+padding:9px 11px;
+border:1px solid #d9e0e6;
+border-radius:9px;
+font-size:14px;
+background:#fafbfc;
+resize:vertical;
+min-height:42px;
+max-height:140px;
+font-family:Arial,sans-serif;
+color:#29465d;
+outline:none
+}
+
+.task-comment-input:focus{
+border-color:#286ca8;
+background:#fff;
+box-shadow:0 0 0 2px #286ca814
+}
+
+.task-comment-input::placeholder{
+color:#9aa5ae
+}
+
+.comment-status{
+font-size:11px;
+color:#7b8791;
+min-height:14px
+}
+
+
+/* ================================================= */
+/* BADGES */
+/* ================================================= */
+
+.badge{
+padding:5px 8px;
+border-radius:8px;
+font-size:11px;
+font-weight:700;
+display:inline-block
+}
+
+.high{
+background:#fbe9e7;
+color:#a33b31
+}
+
+.med{
+background:#fff3d7;
+color:#8b6500
+}
+
+.low{
+background:#e8f3ea;
+color:#357344
+}
+
+
+/* ================================================= */
+/* RESPONSABLES */
+/* ================================================= */
+
+.assignees{
+display:flex;
+gap:6px;
+flex-wrap:wrap;
+align-items:center
+}
+
+.person-checkbox{
+position:relative;
+cursor:pointer
+}
+
+.person-checkbox input{
+position:absolute;
+opacity:0;
+pointer-events:none
+}
+
+.person-checkbox span{
+display:inline-block;
+padding:9px 12px;
+border-radius:9px;
+font-size:13px;
+font-weight:700;
+border:2px solid transparent;
+transition:.15s
+}
+
+
+/* YANNIS */
+
+.person-checkbox.yannis span{
+background:#dcecff;
+color:#1764a0
+}
+
+
+/* JEAN-LUC */
+
+.person-checkbox.jean-luc span{
+background:#f9dddd;
+color:#a83232
+}
+
+
+/* CATHERINE */
+
+.person-checkbox.catherine span{
+background:#fff1b8;
+color:#8a6a00
+}
+
+
+.person-checkbox input:checked + span{
+border-color:currentColor;
+box-shadow:0 0 0 2px #ffffff inset
+}
+
+
+/* ================================================= */
+/* BADGES RESPONSABLES */
+/* ================================================= */
+
+.assignee-badges{
+display:flex;
+gap:5px;
+flex-wrap:wrap;
+margin-top:5px
+}
+
+.assignee-badge{
+padding:5px 8px;
+border-radius:8px;
+font-size:11px;
+font-weight:700
+}
+
+.assignee-yannis{
+background:#dcecff;
+color:#1764a0
+}
+
+.assignee-jean-luc{
+background:#f9dddd;
+color:#a83232
+}
+
+.assignee-catherine{
+background:#fff1b8;
+color:#8a6a00
+}
+
+
+/* ================================================= */
+/* ACTIONS */
+/* ================================================= */
+
+.task-actions{
+display:flex;
+align-items:center;
+gap:4px
+}
+
+.edit,
+.delete,
+.save-edit,
+.cancel-edit{
+background:transparent;
+padding:5px 7px;
+font-size:18px
+}
+
+.edit{
+color:#286ca8
+}
+
+.delete{
+color:#a34a43;
+font-size:20px
+}
+
+.save-edit{
+color:#39845a
+}
+
+.cancel-edit{
+color:#a34a43
+}
+
+
+/* ================================================= */
+/* EDITION */
+/* ================================================= */
+
+.edit-text{
+width:100%;
+padding:9px 11px;
+border:1px solid #286ca8;
+border-radius:9px;
+font-size:16px;
+outline:none
+}
+
+.edit-priority{
+width:auto;
+min-width:135px;
+padding:9px;
+border:1px solid #d4dce3;
+border-radius:9px;
+font-size:14px;
+margin-top:8px
+}
+
+.edit-form{
+display:flex;
+flex-direction:column;
+gap:5px
+}
+
+
+/* ================================================= */
+/* CONNEXION */
+/* ================================================= */
+
+.login{
+max-width:440px;
+margin:8vh auto
+}
+
+.login input{
+margin-bottom:10px
+}
+
+.login button{
+width:100%;
+margin-top:7px
+}
+
+.msg{
+padding:10px;
+background:#f8ecea;
+color:#963d35;
+border-radius:10px;
+margin-top:10px
+}
+
+#app{
+display:none
+}
+
+
+/* ================================================= */
+/* STATUT */
+/* ================================================= */
+
+.dot{
+display:inline-block;
+width:9px;
+height:9px;
+border-radius:50%;
+background:#e0a72b;
+margin-right:6px
+}
+
+.online .dot{
+background:#48a868
+}
+
+
+/* ================================================= */
+/* MOBILE */
+/* ================================================= */
 
 @media(max-width:800px){
-  .grid{grid-template-columns:1fr}
-  .add{grid-template-columns:1fr}
-  header{flex-direction:column}
+
+.grid{
+grid-template-columns:1fr
 }
+
+.add{
+grid-template-columns:1fr
+}
+
+header{
+flex-direction:column
+}
+
+.task{
+grid-template-columns:40px 1fr auto
+}
+
+.edit-priority{
+width:100%
+}
+
+}
+
 </style>
+
 </head>
 
 <body>
 
+
+<!-- ========================= -->
+<!-- CONNEXION -->
+<!-- ========================= -->
+
 <div id="login" class="card login">
+
 <h1>WorkBoard</h1>
 
 <p class="small">
 Utilise le même compte sur la tablette et le PC pour retrouver les mêmes tâches.
 </p>
 
-<input id="email" type="email" placeholder="Adresse e-mail">
-<input id="password" type="password" placeholder="Mot de passe">
+<input
+id="email"
+type="email"
+placeholder="Adresse e-mail"
+>
 
-<button class="primary" id="signin">Se connecter</button>
-<button class="secondary" id="signup">Créer mon compte</button>
+<input
+id="password"
+type="password"
+placeholder="Mot de passe"
+>
 
-<div id="loginMsg" class="msg" style="display:none"></div>
+<button
+class="primary"
+id="signin"
+>
+Se connecter
+</button>
+
+<button
+class="secondary"
+id="signup"
+>
+Créer mon compte
+</button>
+
+<div
+id="loginMsg"
+class="msg"
+style="display:none"
+></div>
+
 </div>
 
+
+<!-- ========================= -->
+<!-- APPLICATION -->
+<!-- ========================= -->
 
 <div id="app" class="app">
 
+
 <header>
+
 <div>
+
 <h1>WorkBoard</h1>
-<div class="sub">Tâches professionnelles — synchronisées</div>
+
+<div class="sub">
+Tâches professionnelles — synchronisées
+</div>
+
 </div>
 
 <div id="status">
-<span class="dot"></span>Connexion...
+
+<span class="dot"></span>
+Connexion...
+
 </div>
+
 </header>
 
 
 <div class="grid">
 
+
+<!-- ========================= -->
+<!-- COLONNE GAUCHE -->
+<!-- ========================= -->
+
 <section>
 
+
+<!-- STATISTIQUES -->
+
 <div class="card">
+
 <h2>Vue du jour</h2>
 
 <div class="stats">
 
-<div class="stat">
-<div class="num" id="total">0</div>
-<div class="small">Tâches</div>
-</div>
 
 <div class="stat">
-<div class="num" id="done">0</div>
-<div class="small">Terminées</div>
+
+<div
+class="num"
+id="total"
+>
+0
 </div>
+
+<div class="small">
+Tâches
+</div>
+
+</div>
+
 
 <div class="stat">
-<div class="num" id="remain">0</div>
-<div class="small">À faire</div>
+
+<div
+class="num"
+id="done"
+>
+0
+</div>
+
+<div class="small">
+Terminées
 </div>
 
 </div>
 
-<div style="margin-top:18px;font-weight:700;display:flex;justify-content:space-between">
-<span>Progression</span>
-<span id="pct">0%</span>
+
+<div class="stat">
+
+<div
+class="num"
+id="remain"
+>
+0
 </div>
+
+<div class="small">
+À faire
+</div>
+
+</div>
+
+
+</div>
+
+
+<div
+style="margin-top:18px;font-weight:700;display:flex;justify-content:space-between"
+>
+
+<span>
+Progression
+</span>
+
+<span id="pct">
+0%
+</span>
+
+</div>
+
 
 <div class="bar">
-<div class="fill" id="fill"></div>
+
+<div
+class="fill"
+id="fill"
+></div>
+
 </div>
 
-<div class="small" id="date"></div>
+
+<div
+class="small"
+id="date"
+></div>
+
 </div>
 
+
+<!-- PRIORITES -->
 
 <div class="card">
-<h2>Priorités</h2>
-<div id="prioritySummary">Aucune tâche prioritaire.</div>
+
+<h2>
+Priorités
+</h2>
+
+<div id="prioritySummary">
+Aucune tâche prioritaire.
+</div>
+
 </div>
 
 
+<!-- NOTES -->
+
 <div class="card">
-<h2>Notes de travail</h2>
+
+<h2>
+Notes de travail
+</h2>
 
 <textarea
 id="notes"
@@ -144,25 +713,44 @@ placeholder="Réunions, informations importantes, rappels..."
 
 </div>
 
-<button class="secondary" id="logout">
+
+<button
+class="secondary"
+id="logout"
+>
 Se déconnecter
 </button>
+
 
 </section>
 
 
+<!-- ========================= -->
+<!-- COLONNE DROITE -->
+<!-- ========================= -->
+
 <section>
+
+
+<!-- ========================= -->
+<!-- AJOUTER UNE TACHE -->
+<!-- ========================= -->
 
 <div class="card">
 
-<h2>Ajouter une tâche</h2>
+<h2>
+Ajouter une tâche
+</h2>
+
 
 <div class="add">
+
 
 <input
 id="taskInput"
 placeholder="Ex. Envoyer le dossier au client..."
 >
+
 
 <select id="priority">
 
@@ -180,32 +768,109 @@ Priorité basse
 
 </select>
 
+
+<div
+class="assignees"
+id="assignees"
+>
+
+
+<label class="person-checkbox yannis">
+
+<input
+type="checkbox"
+value="Yannis"
+checked
+>
+
+<span>
+Yannis
+</span>
+
+</label>
+
+
+<label class="person-checkbox jean-luc">
+
+<input
+type="checkbox"
+value="Jean-Luc"
+>
+
+<span>
+Jean-Luc
+</span>
+
+</label>
+
+
+<label class="person-checkbox catherine">
+
+<input
+type="checkbox"
+value="Catherine"
+>
+
+<span>
+Catherine
+</span>
+
+</label>
+
+
 </div>
 
-<button class="primary" id="add">
+
+</div>
+
+
+<button
+class="primary"
+id="add"
+style="margin-top:9px"
+>
 + Ajouter la tâche
 </button>
 
 </div>
 
 
+<!-- ========================= -->
+<!-- LISTE DES TACHES -->
+<!-- ========================= -->
+
 <div class="card">
 
-<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
 
-<h2>Tâches</h2>
+<div
+style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"
+>
+
+<h2>
+Tâches
+</h2>
+
+
+<!-- FILTRE ETAT -->
 
 <div class="filters">
 
-<button class="active" id="all">
+<button
+class="active"
+id="all"
+>
 Toutes
 </button>
 
-<button id="todo">
+<button
+id="todo"
+>
 À faire
 </button>
 
-<button id="doneFilter">
+<button
+id="doneFilter"
+>
 Terminées
 </button>
 
@@ -213,21 +878,81 @@ Terminées
 
 </div>
 
-<div id="tasks"></div>
+
+<!-- FILTRE RESPONSABLE -->
+
+<div
+style="margin-top:5px;font-weight:700;font-size:14px"
+>
+Responsable :
+</div>
+
+
+<div
+class="filters"
+id="peopleFilters"
+>
+
+
+<button
+class="active"
+id="allPeople"
+>
+Tous
+</button>
+
+
+<button
+id="jeanLucFilter"
+>
+Jean-Luc
+</button>
+
+
+<button
+id="catherineFilter"
+>
+Catherine
+</button>
+
+
+<button
+id="yannisFilter"
+>
+Yannis
+</button>
+
 
 </div>
+
+
+<div id="tasks"></div>
+
+
+</div>
+
 
 </section>
 
 </div>
+
 </div>
 
 
 <script type="module">
 
+
+/* ================================================= */
+/* FIREBASE */
+/* ================================================= */
+
+
 import {
 initializeApp
-} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+}
+from
+"https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+
 
 import {
 getAuth,
@@ -235,37 +960,75 @@ onAuthStateChanged,
 signInWithEmailAndPassword,
 createUserWithEmailAndPassword,
 signOut
-} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+}
+from
+"https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+
 
 import {
 getFirestore,
 doc,
 onSnapshot,
 setDoc
-} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+}
+from
+"https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
 
 import {
 firebaseConfig
-} from "./firebase-config.js";
+}
+from
+"./firebase-config.js";
 
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-const day = new Date().toISOString().slice(0,10);
-
-let tasks = [];
-let notes = "";
-let filter = "all";
-let unsub = null;
-let timer = null;
+const app=
+initializeApp(firebaseConfig);
 
 
-const $ = x => document.getElementById(x);
+const auth=
+getAuth(app);
 
 
-$("date").textContent =
+const db=
+getFirestore(app);
+
+
+const day=
+new Date()
+.toISOString()
+.slice(0,10);
+
+
+let tasks=[];
+
+let notes="";
+
+let filter="all";
+
+let personFilter="all";
+
+let unsub=null;
+
+let timer=null;
+
+
+/* TIMER POUR LES COMMENTAIRES */
+
+const commentTimers={};
+
+
+const $=
+x=>document.getElementById(x);
+
+
+/* ================================================= */
+/* DATE */
+/* ================================================= */
+
+
+$("date").textContent=
+
 new Intl.DateTimeFormat(
 "fr-FR",
 {
@@ -277,106 +1040,240 @@ year:"numeric"
 ).format(new Date());
 
 
+/* ================================================= */
+/* MESSAGE */
+/* ================================================= */
+
+
 function showMsg(x){
 
-$("loginMsg").textContent = x;
-$("loginMsg").style.display = "block";
+$("loginMsg").textContent=x;
+
+$("loginMsg").style.display=
+"block";
 
 }
+
+
+/* ================================================= */
+/* ERREURS FIREBASE */
+/* ================================================= */
 
 
 function friendly(c){
 
-if(c.includes("invalid-credential"))
-return "e-mail ou mot de passe incorrect.";
+if(
+c.includes("invalid-credential")
+)
+return"e-mail ou mot de passe incorrect.";
 
-if(c.includes("email-already"))
-return "ce compte existe déjà.";
+if(
+c.includes("email-already")
+)
+return"ce compte existe déjà.";
 
-if(c.includes("weak-password"))
-return "mot de passe trop court.";
+if(
+c.includes("weak-password")
+)
+return"mot de passe trop court.";
 
-return "Une erreur est survenue.";
+return"Une erreur est survenue.";
 
 }
 
 
+/* ================================================= */
 /* CONNEXION */
+/* ================================================= */
 
-$("signin").onclick = async () => {
 
-try{
+$("signin").addEventListener(
+"click",
+async e=>{
 
-await signInWithEmailAndPassword(
-auth,
-$("email").value.trim(),
-$("password").value
+e.preventDefault();
+
+
+const email=
+$("email")
+.value
+.trim();
+
+
+const password=
+$("password")
+.value;
+
+
+if(!email||!password){
+
+showMsg(
+"Merci de renseigner l'e-mail et le mot de passe."
 );
-
-}catch(e){
-
-showMsg(e.code + " — " + e.message);
-
-}
-
-};
-
-
-/* CREATION DU COMPTE */
-
-$("signup").onclick = async () => {
-
-try{
-
-await createUserWithEmailAndPassword(
-auth,
-$("email").value.trim(),
-$("password").value
-);
-
-showMsg("Compte créé.");
-
-}catch(e){
-
-showMsg(e.code + " — " + e.message);
-
-}
-
-};
-
-
-/* DECONNEXION */
-
-$("logout").onclick = () => signOut(auth);
-
-
-/* AUTHENTIFICATION */
-
-onAuthStateChanged(auth, u => {
-
-if(!u){
-
-$("login").style.display = "block";
-$("app").style.display = "none";
 
 return;
 
 }
 
-$("login").style.display = "none";
-$("app").style.display = "block";
 
-$("status").innerHTML =
+const button=
+$("signin");
+
+
+button.disabled=
+true;
+
+button.textContent=
+"Connexion...";
+
+
+try{
+
+await signInWithEmailAndPassword(
+auth,
+email,
+password
+);
+
+}
+catch(e){
+
+console.error(
+"Erreur de connexion Firebase :",
+e
+);
+
+showMsg(
+friendly(e.code||"")
+);
+
+}
+finally{
+
+button.disabled=
+false;
+
+button.textContent=
+"Se connecter";
+
+}
+
+});
+
+
+/* ================================================= */
+/* CREATION DU COMPTE */
+/* ================================================= */
+
+
+$("signup").addEventListener(
+"click",
+async e=>{
+
+e.preventDefault();
+
+
+const email=
+$("email")
+.value
+.trim();
+
+
+const password=
+$("password")
+.value;
+
+
+if(!email||!password){
+
+showMsg(
+"Merci de renseigner l'e-mail et le mot de passe."
+);
+
+return;
+
+}
+
+
+try{
+
+await createUserWithEmailAndPassword(
+auth,
+email,
+password
+);
+
+}
+catch(e){
+
+console.error(
+"Erreur de création :",
+e
+);
+
+showMsg(
+friendly(e.code||"")
+);
+
+}
+
+});
+
+
+/* ================================================= */
+/* DECONNEXION */
+/* ================================================= */
+
+
+$("logout").onclick=
+()=>signOut(auth);
+
+
+/* ================================================= */
+/* AUTHENTIFICATION */
+/* ================================================= */
+
+
+onAuthStateChanged(
+auth,
+u=>{
+
+if(!u){
+
+$("login").style.display=
+"block";
+
+$("app").style.display=
+"none";
+
+return;
+
+}
+
+
+$("login").style.display=
+"none";
+
+$("app").style.display=
+"block";
+
+
+$("status").innerHTML=
 '<span class="dot"></span>Synchronisation active';
 
-$("status").className = "online";
+$("status").className=
+"online";
+
 
 listen(u.uid);
 
 });
 
 
+/* ================================================= */
 /* REFERENCE FIRESTORE */
+/* ================================================= */
+
 
 function ref(uid){
 
@@ -391,26 +1288,41 @@ day
 }
 
 
+/* ================================================= */
 /* ECOUTE DES DONNEES */
+/* ================================================= */
+
 
 function listen(uid){
 
 if(unsub)
 unsub();
 
-unsub = onSnapshot(
+
+unsub=
+onSnapshot(
 ref(uid),
-s => {
+s=>{
 
-const d = s.exists() ? s.data() : {};
+const d=
+s.exists()
+?s.data()
+:{};
 
-tasks = Array.isArray(d.tasks)
-? d.tasks
-: [];
 
-notes = d.notes || "";
+tasks=
+Array.isArray(d.tasks)
+?d.tasks
+:[];
 
-$("notes").value = notes;
+
+notes=
+d.notes||"";
+
+
+$("notes").value=
+notes;
+
 
 if(!s.exists()){
 
@@ -426,26 +1338,28 @@ updatedAt:Date.now()
 
 }
 
+
 render();
 
 },
-error => {
+()=>{
 
-$("status").innerHTML =
+$("status").innerHTML=
 '<span class="dot"></span>Erreur de synchronisation';
 
-$("status").className = "";
-
-console.error("Firestore:", error);
+$("status").className=
+"";
 
 }
-
 );
 
 }
 
 
+/* ================================================= */
 /* SAUVEGARDE */
+/* ================================================= */
+
 
 async function save(){
 
@@ -469,53 +1383,104 @@ merge:true
 }
 
 
+/* ================================================= */
 /* AJOUT TACHE */
+/* ================================================= */
 
-$("add").onclick = async () => {
 
-let i = $("taskInput");
-let t = i.value.trim();
+$("add").onclick=
+async()=>{
+
+const i=
+$("taskInput");
+
+
+const t=
+i.value.trim();
+
 
 if(!t)
 return;
 
-tasks = [
+
+/* PERSONNES SELECTIONNEES */
+
+const selectedPeople=
+
+Array.from(
+document.querySelectorAll(
+"#assignees input:checked"
+)
+).map(
+input=>input.value
+);
+
+
+if(!selectedPeople.length){
+
+alert(
+"Merci de sélectionner au moins une personne."
+);
+
+return;
+
+}
+
+
+/* CREATION */
+
+tasks=[
 ...tasks,
 {
 id:crypto.randomUUID(),
 text:t,
 priority:$("priority").value,
-done:false
+assignee:selectedPeople,
+done:false,
+comment:""
 }
 ];
 
-i.value = "";
+
+i.value="";
+
 
 await save();
 
 };
 
 
+/* ================================================= */
 /* ENTER POUR AJOUTER */
+/* ================================================= */
 
-$("taskInput").onkeydown = e => {
 
-if(e.key === "Enter")
+$("taskInput").onkeydown=
+e=>{
+
+if(e.key==="Enter")
 $("add").click();
 
 };
 
 
+/* ================================================= */
 /* NOTES */
+/* ================================================= */
 
-$("notes").oninput = () => {
+
+$("notes").oninput=()=>{
 
 clearTimeout(timer);
 
-timer = setTimeout(
-() => {
 
-notes = $("notes").value;
+timer=
+setTimeout(
+()=>{
+
+notes=
+$("notes").value;
+
 save();
 
 },
@@ -525,142 +1490,936 @@ save();
 };
 
 
+/* ================================================= */
+/* COMMENTAIRE D'UNE TACHE */
+/* ================================================= */
+
+
+async function saveComment(id,comment){
+
+tasks=
+tasks.map(
+t=>
+t.id===id
+?{
+...t,
+comment:comment
+}
+:t
+);
+
+
+await save();
+
+}
+
+
+/* ================================================= */
+/* COMMENTAIRE AUTOMATIQUE */
+/* ================================================= */
+
+
+function updateComment(id,comment,input,status){
+
+if(commentTimers[id])
+clearTimeout(commentTimers[id]);
+
+
+status.textContent=
+"Enregistrement...";
+
+
+commentTimers[id]=
+setTimeout(
+async()=>{
+
+try{
+
+await saveComment(
+id,
+comment
+);
+
+status.textContent=
+"✓ Enregistré";
+
+setTimeout(
+()=>{
+
+if(status)
+status.textContent="";
+
+},
+1200
+);
+
+}
+catch(e){
+
+console.error(
+"Erreur sauvegarde commentaire :",
+e
+);
+
+status.textContent=
+"Erreur de sauvegarde";
+
+}
+
+},
+500
+);
+
+}
+
+
+/* ================================================= */
 /* TERMINER UNE TACHE */
+/* ================================================= */
+
 
 async function toggle(id){
 
-tasks = tasks.map(
-t =>
-t.id === id
-? {...t,done:!t.done}
-: t
+tasks=
+tasks.map(
+t=>
+t.id===id
+?{
+...t,
+done:!t.done
+}
+:t
 );
+
 
 await save();
 
 }
 
 
+/* ================================================= */
 /* SUPPRIMER */
+/* ================================================= */
+
 
 async function del(id){
 
-tasks = tasks.filter(
-t => t.id !== id
+tasks=
+tasks.filter(
+t=>t.id!==id
 );
+
 
 await save();
 
 }
 
 
-/* FILTRES */
+/* ================================================= */
+/* MODIFIER UNE TACHE */
+/* ================================================= */
+
+
+async function editTask(
+id,
+newText,
+newPriority,
+newAssignees
+){
+
+tasks=
+tasks.map(
+t=>
+t.id===id
+?{
+...t,
+text:newText,
+priority:newPriority,
+assignee:newAssignees
+}
+:t
+);
+
+
+await save();
+
+}
+
+
+/* ================================================= */
+/* FILTRE ETAT */
+/* ================================================= */
+
 
 function setFilter(f){
 
-filter = f;
+filter=f;
+
 
 document
-.querySelectorAll(".filters button")
+.querySelectorAll(
+".filters:not(#peopleFilters) button"
+)
 .forEach(
-b => b.classList.remove("active")
+b=>b.classList.remove("active")
 );
 
+
 $(
-f === "done"
-? "doneFilter"
-: f
-).classList.add("active");
+f==="done"
+?"doneFilter"
+:f
+)
+.classList.add("active");
+
 
 render();
 
 }
 
 
-$("all").onclick = () => setFilter("all");
-$("todo").onclick = () => setFilter("todo");
-$("doneFilter").onclick = () => setFilter("done");
+$("all").onclick=
+()=>setFilter("all");
 
 
-/* AFFICHAGE */
+$("todo").onclick=
+()=>setFilter("todo");
 
-function render(){
 
-const box = $("tasks");
+$("doneFilter").onclick=
+()=>setFilter("done");
 
-box.innerHTML = "";
 
-const shown = tasks.filter(
-t =>
-filter === "all"
-||
-filter === "todo" && !t.done
-||
-filter === "done" && t.done
+/* ================================================= */
+/* FILTRE RESPONSABLE */
+/* ================================================= */
+
+
+function setPersonFilter(person){
+
+personFilter=
+person;
+
+
+document
+.querySelectorAll(
+"#peopleFilters button"
+)
+.forEach(
+b=>b.classList.remove("active")
 );
 
 
+const buttonId=
+
+person==="all"
+?"allPeople"
+
+:person==="Jean-Luc"
+?"jeanLucFilter"
+
+:person==="Catherine"
+?"catherineFilter"
+
+:"yannisFilter";
+
+
+$(buttonId)
+.classList
+.add("active");
+
+
+render();
+
+}
+
+
+$("allPeople").onclick=
+()=>setPersonFilter("all");
+
+
+$("jeanLucFilter").onclick=
+()=>setPersonFilter("Jean-Luc");
+
+
+$("catherineFilter").onclick=
+()=>setPersonFilter("Catherine");
+
+
+$("yannisFilter").onclick=
+()=>setPersonFilter("Yannis");
+
+
+/* ================================================= */
+/* AFFICHAGE */
+/* ================================================= */
+
+
+function render(){
+
+const box=
+$("tasks");
+
+
+box.innerHTML="";
+
+
+/* FILTRAGE */
+
+const shown=
+
+tasks.filter(
+t=>{
+
+
+/* ETAT */
+
+const matchesStatus=
+
+filter==="all"
+
+||
+
+filter==="todo"&&!t.done
+
+||
+
+filter==="done"&&t.done;
+
+
+/* RESPONSABLES */
+
+const people=
+
+Array.isArray(t.assignee)
+
+?t.assignee
+
+:t.assignee
+?[t.assignee]
+:["Yannis"];
+
+
+const matchesPerson=
+
+personFilter==="all"
+
+||
+
+people.includes(
+personFilter
+);
+
+
+return(
+matchesStatus&&
+matchesPerson
+);
+
+});
+
+
+/* AUCUNE TACHE */
+
 if(!shown.length){
 
-box.innerHTML =
+box.innerHTML=
+
 '<div style="padding:25px;text-align:center;color:#7b8791">Aucune tâche dans cette vue.</div>';
 
 }
 
 
-shown.forEach(t => {
-
-let row = document.createElement("div");
-row.className = "task";
-
-
-let cb = document.createElement("input");
-
-cb.type = "checkbox";
-cb.className = "check";
-cb.checked = t.done;
-
-cb.onchange = () =>
-toggle(t.id);
+/* ================================================= */
+/* AFFICHAGE DES TACHES */
+/* ================================================= */
 
 
-let mid = document.createElement("div");
-
-let title = document.createElement("div");
-
-title.className =
-"tasktitle" +
-(t.done ? " done" : "");
-
-title.textContent = t.text;
+shown.forEach(
+t=>{
 
 
-let right = document.createElement("div");
-
-let b = document.createElement("span");
-
-b.className =
-"badge " + t.priority;
-
-b.textContent =
-t.priority === "high"
-? "URGENT"
-: t.priority === "med"
-? "NORMAL"
-: "BASSE";
+const row=
+document.createElement("div");
 
 
-let d = document.createElement("button");
-
-d.className = "delete";
-d.textContent = "×";
-
-d.onclick = () =>
-del(t.id);
+row.className=
+"task";
 
 
-right.append(b,d);
-mid.append(title);
+/* ================================================= */
+/* CASE A COCHER */
+/* ================================================= */
+
+const cb=
+document.createElement("input");
+
+
+cb.type=
+"checkbox";
+
+cb.className=
+"check";
+
+cb.checked=
+t.done;
+
+cb.onchange=
+()=>toggle(t.id);
+
+
+/* ================================================= */
+/* ZONE CENTRALE */
+/* ================================================= */
+
+const mid=
+document.createElement("div");
+
+
+const title=
+document.createElement("div");
+
+
+title.className=
+"tasktitle"+
+(t.done?" done":"");
+
+
+title.textContent=
+t.text;
+
+
+/* ================================================= */
+/* RESPONSABLES */
+/* ================================================= */
+
+const people=
+
+Array.isArray(t.assignee)
+
+?t.assignee
+
+:t.assignee
+?[t.assignee]
+:["Yannis"];
+
+
+const responsible=
+document.createElement("div");
+
+
+responsible.className=
+"assignee-badges";
+
+
+people.forEach(
+person=>{
+
+
+const badge=
+document.createElement("span");
+
+
+badge.className=
+"assignee-badge";
+
+
+if(person==="Yannis"){
+
+badge.classList.add(
+"assignee-yannis"
+);
+
+}
+
+
+if(person==="Jean-Luc"){
+
+badge.classList.add(
+"assignee-jean-luc"
+);
+
+}
+
+
+if(person==="Catherine"){
+
+badge.classList.add(
+"assignee-catherine"
+);
+
+}
+
+
+badge.textContent=
+person;
+
+
+responsible.append(
+badge
+);
+
+});
+
+
+/* ================================================= */
+/* PRIORITE */
+/* ================================================= */
+
+const b=
+document.createElement("span");
+
+
+b.className=
+"badge "+t.priority;
+
+
+b.textContent=
+
+t.priority==="high"
+?"URGENT"
+
+:t.priority==="med"
+?"NORMAL"
+
+:"BASSE";
+
+
+/* ================================================= */
+/* INFORMATIONS */
+/* ================================================= */
+
+const info=
+document.createElement("div");
+
+
+info.style.marginTop=
+"5px";
+
+
+info.append(
+responsible,
+b
+);
+
+
+/* ================================================= */
+/* COMMENTAIRE */
+/* ================================================= */
+
+const commentContainer=
+document.createElement("div");
+
+
+commentContainer.className=
+"task-comment";
+
+
+const commentLabel=
+document.createElement("div");
+
+
+commentLabel.className=
+"task-comment-label";
+
+
+commentLabel.textContent=
+"Commentaire";
+
+
+const commentInput=
+document.createElement("textarea");
+
+
+commentInput.className=
+"task-comment-input";
+
+
+commentInput.rows=
+1;
+
+
+commentInput.placeholder=
+"Ajouter un commentaire...";
+
+
+commentInput.value=
+t.comment||"";
+
+
+const commentStatus=
+document.createElement("div");
+
+
+commentStatus.className=
+"comment-status";
+
+
+commentInput.addEventListener(
+"input",
+()=>{
+
+updateComment(
+t.id,
+commentInput.value,
+commentInput,
+commentStatus
+);
+
+});
+
+
+commentContainer.append(
+commentLabel,
+commentInput,
+commentStatus
+);
+
+
+/* ================================================= */
+/* ACTIONS */
+/* ================================================= */
+
+const right=
+document.createElement("div");
+
+
+right.className=
+"task-actions";
+
+
+/* ================================================= */
+/* MODIFIER */
+/* ================================================= */
+
+const edit=
+document.createElement("button");
+
+
+edit.className=
+"edit";
+
+
+edit.textContent=
+"✏️";
+
+
+edit.title=
+"Modifier la tâche";
+
+
+edit.onclick=
+()=>{
+
+
+/* FORMULAIRE */
+
+const form=
+document.createElement("div");
+
+
+form.className=
+"edit-form";
+
+
+/* TEXTE */
+
+const input=
+document.createElement("input");
+
+
+input.className=
+"edit-text";
+
+
+input.value=
+t.text;
+
+
+/* PRIORITE */
+
+const select=
+document.createElement("select");
+
+
+select.className=
+"edit-priority";
+
+
+select.innerHTML=`
+
+<option value="high">
+Priorité haute
+</option>
+
+<option value="med">
+Priorité normale
+</option>
+
+<option value="low">
+Priorité basse
+</option>
+
+`;
+
+
+select.value=
+t.priority;
+
+
+/* ================================================= */
+/* RESPONSABLES EDITION */
+/* ================================================= */
+
+const editAssignees=
+document.createElement("div");
+
+
+editAssignees.className=
+"assignees";
+
+
+const currentPeople=
+
+Array.isArray(t.assignee)
+
+?t.assignee
+
+:t.assignee
+?[t.assignee]
+:["Yannis"];
+
+
+[
+"Yannis",
+"Jean-Luc",
+"Catherine"
+]
+.forEach(
+person=>{
+
+
+const label=
+document.createElement("label");
+
+
+label.className=
+"person-checkbox "+
+(
+person==="Yannis"
+?"yannis"
+
+:person==="Jean-Luc"
+?"jean-luc"
+
+:"catherine"
+);
+
+
+const checkbox=
+document.createElement("input");
+
+
+checkbox.type=
+"checkbox";
+
+
+checkbox.value=
+person;
+
+
+checkbox.checked=
+currentPeople.includes(
+person
+);
+
+
+const span=
+document.createElement("span");
+
+
+span.textContent=
+person;
+
+
+label.append(
+checkbox,
+span
+);
+
+
+editAssignees.append(
+label
+);
+
+});
+
+
+/* ================================================= */
+/* SAUVEGARDER */
+/* ================================================= */
+
+const saveBtn=
+document.createElement("button");
+
+
+saveBtn.className=
+"save-edit";
+
+
+saveBtn.textContent=
+"💾";
+
+
+saveBtn.title=
+"Enregistrer";
+
+
+saveBtn.onclick=
+async()=>{
+
+
+const text=
+input.value.trim();
+
+
+if(!text)
+return;
+
+
+/* NOUVEAUX RESPONSABLES */
+
+const selectedPeople=
+
+Array.from(
+editAssignees.querySelectorAll(
+"input:checked"
+)
+).map(
+input=>input.value
+);
+
+
+if(!selectedPeople.length){
+
+alert(
+"Merci de sélectionner au moins une personne."
+);
+
+return;
+
+}
+
+
+await editTask(
+t.id,
+text,
+select.value,
+selectedPeople
+);
+
+};
+
+
+/* ================================================= */
+/* ANNULER */
+/* ================================================= */
+
+const cancelBtn=
+document.createElement("button");
+
+
+cancelBtn.className=
+"cancel-edit";
+
+
+cancelBtn.textContent=
+"❌";
+
+
+cancelBtn.title=
+"Annuler";
+
+
+cancelBtn.onclick=
+()=>render();
+
+
+/* FORMULAIRE */
+
+form.append(
+input,
+select,
+editAssignees
+);
+
+
+/* REMPLACEMENT */
+
+mid.innerHTML="";
+
+mid.append(
+form
+);
+
+
+right.innerHTML="";
+
+right.append(
+saveBtn,
+cancelBtn
+);
+
+
+input.focus();
+
+input.select();
+
+};
+
+
+/* ================================================= */
+/* SUPPRIMER */
+/* ================================================= */
+
+const d=
+document.createElement("button");
+
+
+d.className=
+"delete";
+
+
+d.textContent=
+"×";
+
+
+d.title=
+"Supprimer la tâche";
+
+
+d.onclick=
+()=>del(t.id);
+
+
+/* ACTIONS */
+
+right.append(
+edit,
+d
+);
+
+
+/* ================================================= */
+/* AFFICHAGE FINAL */
+/* ================================================= */
+
+mid.append(
+title,
+info,
+commentContainer
+);
+
 
 row.append(
 cb,
@@ -668,53 +2427,95 @@ mid,
 right
 );
 
-box.append(row);
+
+box.append(
+row
+);
 
 });
 
 
-let total = tasks.length;
+/* ================================================= */
+/* STATISTIQUES */
+/* ================================================= */
 
-let done = tasks.filter(
-t => t.done
-).length;
-
-let p =
-total
-? Math.round(done / total * 100)
-: 0;
+const total=
+tasks.length;
 
 
-$("total").textContent = total;
-$("done").textContent = done;
-$("remain").textContent = total - done;
-$("pct").textContent = p + "%";
-$("fill").style.width = p + "%";
-
-
-let high =
+const done=
 tasks.filter(
-t =>
-!t.done &&
-t.priority === "high"
+t=>t.done
 ).length;
 
 
-$("prioritySummary").innerHTML =
+const p=
+
+total
+
+?Math.round(
+done/total*100
+)
+
+:0;
+
+
+$("total").textContent=
+total;
+
+
+$("done").textContent=
+done;
+
+
+$("remain").textContent=
+total-done;
+
+
+$("pct").textContent=
+p+"%";
+
+
+$("fill").style.width=
+p+"%";
+
+
+/* ================================================= */
+/* PRIORITES */
+/* ================================================= */
+
+const high=
+
+tasks.filter(
+t=>
+!t.done&&
+t.priority==="high"
+).length;
+
+
+$("prioritySummary").innerHTML=
+
 high
-? `<strong>${high}</strong> tâche(s) urgente(s) à traiter.`
-: "Aucune tâche prioritaire en attente. 👍";
+
+?`<strong>${high}</strong> tâche(s) urgente(s) à traiter.`
+
+:"Aucune tâche prioritaire en attente. 👍";
 
 }
 
 
+/* ================================================= */
 /* SERVICE WORKER */
+/* ================================================= */
 
-if("serviceWorker" in navigator){
 
-navigator.serviceWorker.register("sw.js")
-.catch(
-e => console.error("Service Worker:", e)
+if(
+"serviceWorker"
+in navigator
+){
+
+navigator.serviceWorker.register(
+"sw.js"
 );
 
 }
