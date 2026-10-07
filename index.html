@@ -968,17 +968,20 @@ let timer = null;
 const commentTimers = {};
 
 /*
- * Commentaire actuellement en cours d'écriture.
+ * Identifiant du commentaire actuellement édité.
  *
- * Tant que ce champ est actif, render() ne reconstruit
- * pas la liste des tâches.
+ * IMPORTANT :
+ * On ne reconstruit jamais la liste des tâches
+ * tant que ce champ est actif.
  */
 let activeCommentId = null;
 
-let activeCommentStart = 0;
-
-let activeCommentEnd = 0;
-
+/*
+ * Brouillons locaux des commentaires.
+ *
+ * Cela permet de conserver immédiatement ce que
+ * l'utilisateur est en train d'écrire.
+ */
 let commentDrafts = {};
 
 
@@ -1191,6 +1194,27 @@ function ref(uid){
 
 
 /* ================================================= */
+/* VERIFICATION COMMENTAIRE ACTIF */
+/* ================================================= */
+
+function isCommentEditing(){
+
+  const element =
+    document.activeElement;
+
+
+  return !!(
+    element &&
+    element.classList &&
+    element.classList.contains(
+      "task-comment-input"
+    )
+  );
+
+}
+
+
+/* ================================================= */
 /* ECOUTE DES DONNEES */
 /* ================================================= */
 
@@ -1262,6 +1286,34 @@ function listen(uid){
         }
 
 
+        /*
+         * =================================================
+         * IMPORTANT POUR TABLETTE / CLAVIER
+         * =================================================
+         *
+         * Si l'utilisateur est en train d'écrire dans
+         * un commentaire, on NE FAIT PAS render().
+         *
+         * Firebase peut donc recevoir la sauvegarde et
+         * envoyer un snapshot sans détruire le textarea.
+         *
+         * Le clavier Android reste ainsi attaché au champ.
+         */
+        if(
+          isCommentEditing()
+        ){
+
+          updateStatistics();
+
+          return;
+
+        }
+
+
+        /*
+         * Aucun commentaire n'est actuellement édité.
+         * On peut reconstruire l'affichage normalement.
+         */
         render();
 
       },
@@ -1585,24 +1637,19 @@ function updateComment(
 
   /*
    * Sauvegarde locale immédiate.
+   *
+   * Cela permet de garder la valeur même si Firebase
+   * envoie un snapshot pendant l'écriture.
    */
   commentDrafts[id] =
     comment;
 
 
   /*
-   * On mémorise le commentaire actif.
+   * Mémorisation du commentaire actif.
    */
   activeCommentId =
     id;
-
-
-  activeCommentStart =
-    input.selectionStart;
-
-
-  activeCommentEnd =
-    input.selectionEnd;
 
 
   if(commentTimers[id])
@@ -1615,6 +1662,18 @@ function updateComment(
     "Enregistrement...";
 
 
+  /*
+   * =================================================
+   * SAUVEGARDE APRES 1,5 SECONDE
+   * =================================================
+   *
+   * Une petite pause de frappe ne provoque donc pas
+   * une sauvegarde immédiate.
+   *
+   * Surtout :
+   * aucune reconstruction de la page n'est effectuée
+   * pendant que le champ est actif.
+   */
   commentTimers[id] =
     setTimeout(
       async () => {
@@ -1632,11 +1691,10 @@ function updateComment(
 
 
           /*
-           * Si l'utilisateur est toujours dans le champ,
-           * on conserve le brouillon local.
+           * On conserve le brouillon tant que le champ
+           * est encore actif.
            */
           if(
-            activeCommentId !== id ||
             document.activeElement !== input
           ){
 
@@ -1671,7 +1729,7 @@ function updateComment(
         }
 
       },
-      500
+      1500
     );
 
 }
@@ -1953,58 +2011,19 @@ function render(){
 
   /*
    * =================================================
-   * PROTECTION DU COMMENTAIRE SUR TABLETTE
+   * PROTECTION DU COMMENTAIRE
    * =================================================
    *
-   * C'est le point essentiel de cette version.
+   * Si un commentaire est actuellement actif,
+   * on ne touche absolument PAS au DOM des tâches.
    *
-   * Si le curseur est actuellement dans un commentaire,
-   * on NE VIDE PAS box et on NE RECONSTRUIT PAS les tâches.
-   *
-   * Firebase peut donc envoyer une nouvelle donnée,
-   * sans détruire le textarea.
-   *
-   * Le clavier tactile reste ainsi ouvert.
+   * C'est cette partie qui évite de faire disparaître
+   * le clavier Android.
    */
+  if(
+    isCommentEditing()
+  ){
 
-  const focusedComment =
-    document.activeElement &&
-    document.activeElement.classList.contains(
-      "task-comment-input"
-    )
-    ? document.activeElement
-    : null;
-
-
-  if(focusedComment){
-
-    activeCommentId =
-      focusedComment.dataset.taskId ||
-      null;
-
-
-    activeCommentStart =
-      focusedComment.selectionStart;
-
-
-    activeCommentEnd =
-      focusedComment.selectionEnd;
-
-
-    if(activeCommentId){
-
-      commentDrafts[activeCommentId] =
-        focusedComment.value;
-
-    }
-
-
-    /*
-     * IMPORTANT :
-     *
-     * Pas de box.innerHTML = "" ici.
-     * Le DOM du commentaire reste intact.
-     */
     updateStatistics();
 
     return;
@@ -2013,8 +2032,8 @@ function render(){
 
 
   /*
-   * Aucun commentaire n'est actif.
-   * On peut reconstruire normalement.
+   * Aucun commentaire actif.
+   * On peut reconstruire normalement la liste.
    */
 
   box.innerHTML =
@@ -2314,7 +2333,8 @@ function render(){
 
 
       /*
-       * On affiche le brouillon local s'il existe.
+       * Si un brouillon local existe, on l'utilise.
+       * Sinon on affiche la valeur Firebase.
        */
       commentInput.value =
 
@@ -2352,59 +2372,6 @@ function render(){
           activeCommentId =
             t.id;
 
-
-          activeCommentStart =
-            commentInput.selectionStart;
-
-
-          activeCommentEnd =
-            commentInput.selectionEnd;
-
-        }
-      );
-
-
-      commentInput.addEventListener(
-        "click",
-        () => {
-
-          activeCommentId =
-            t.id;
-
-
-          activeCommentStart =
-            commentInput.selectionStart;
-
-
-          activeCommentEnd =
-            commentInput.selectionEnd;
-
-        }
-      );
-
-
-      commentInput.addEventListener(
-        "keyup",
-        () => {
-
-          if(
-            document.activeElement ===
-            commentInput
-          ){
-
-            activeCommentId =
-              t.id;
-
-
-            activeCommentStart =
-              commentInput.selectionStart;
-
-
-            activeCommentEnd =
-              commentInput.selectionEnd;
-
-          }
-
         }
       );
 
@@ -2419,14 +2386,6 @@ function render(){
 
           activeCommentId =
             t.id;
-
-
-          activeCommentStart =
-            commentInput.selectionStart;
-
-
-          activeCommentEnd =
-            commentInput.selectionEnd;
 
 
           /*
@@ -2447,50 +2406,60 @@ function render(){
       );
 
 
-      /*
-       * Quand l'utilisateur quitte le champ,
-       * on libère le verrou après un petit délai.
-       */
+      /* ================================================= */
+      /* SORTIE DU COMMENTAIRE */
+      /* ================================================= */
+
       commentInput.addEventListener(
         "blur",
         () => {
 
+          /*
+           * On conserve la dernière valeur localement.
+           */
           commentDrafts[t.id] =
             commentInput.value;
 
 
+          /*
+           * On libère le commentaire actif.
+           *
+           * IMPORTANT :
+           * on ne fait PAS focus() ici.
+           *
+           * On laisse Android gérer naturellement
+           * la fermeture du clavier.
+           */
+          if(
+            activeCommentId === t.id
+          ){
+
+            activeCommentId =
+              null;
+
+          }
+
+
+          /*
+           * Une fois sorti du champ, on peut demander
+           * une reconstruction de l'affichage.
+           *
+           * Petit délai pour laisser Android terminer
+           * son changement de focus.
+           */
           setTimeout(
             () => {
 
-              /*
-               * Si l'utilisateur n'est pas revenu
-               * dans ce commentaire, on libère le verrou.
-               */
               if(
-                document.activeElement !==
-                commentInput
+                !isCommentEditing()
               ){
 
-                if(
-                  activeCommentId ===
-                  t.id
-                ){
-
-                  activeCommentId =
-                    null;
-
-                  activeCommentStart =
-                    0;
-
-                  activeCommentEnd =
-                    0;
-
-                }
+                render();
 
               }
 
             },
-            700
+            100
           );
 
         }
