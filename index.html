@@ -968,12 +968,17 @@ let timer = null;
 const commentTimers = {};
 
 /*
- * Permet de conserver le commentaire en cours
- * même lorsque Firebase déclenche un nouveau render().
+ * Commentaire actuellement en cours d'écriture.
+ *
+ * Tant que ce champ est actif, render() ne reconstruit
+ * pas la liste des tâches.
  */
 let activeCommentId = null;
+
 let activeCommentStart = 0;
+
 let activeCommentEnd = 0;
+
 let commentDrafts = {};
 
 
@@ -1004,7 +1009,8 @@ new Intl.DateTimeFormat(
 
 function showMsg(x){
 
-  $("loginMsg").textContent = x;
+  $("loginMsg").textContent =
+    x;
 
   $("loginMsg").style.display =
     "block";
@@ -1048,6 +1054,7 @@ $("signin").addEventListener(
     const password =
       $("password").value;
 
+
     if(!email || !password){
 
       showMsg(
@@ -1058,13 +1065,16 @@ $("signin").addEventListener(
 
     }
 
+
     const button =
       $("signin");
 
-    button.disabled = true;
+    button.disabled =
+      true;
 
     button.textContent =
       "Connexion...";
+
 
     try{
 
@@ -1089,7 +1099,8 @@ $("signin").addEventListener(
     }
     finally{
 
-      button.disabled = false;
+      button.disabled =
+        false;
 
       button.textContent =
         "Se connecter";
@@ -1116,6 +1127,7 @@ $("signup").addEventListener(
     const password =
       $("password").value;
 
+
     if(!email || !password){
 
       showMsg(
@@ -1125,6 +1137,7 @@ $("signup").addEventListener(
       return;
 
     }
+
 
     try{
 
@@ -1186,6 +1199,7 @@ function listen(uid){
   if(unsub)
     unsub();
 
+
   unsub =
     onSnapshot(
       ref(uid),
@@ -1196,18 +1210,31 @@ function listen(uid){
           ? s.data()
           : {};
 
+
         tasks =
           Array.isArray(d.tasks)
           ? d.tasks
           : [];
+
 
         notes =
           typeof d.notes === "string"
           ? d.notes
           : "";
 
-        $("notes").value =
-          notes;
+
+        /*
+         * Ne pas remplacer les notes si l'utilisateur
+         * est actuellement en train de les modifier.
+         */
+        if(
+          document.activeElement !== $("notes")
+        ){
+
+          $("notes").value =
+            notes;
+
+        }
 
 
         if(!s.exists()){
@@ -1234,6 +1261,7 @@ function listen(uid){
 
         }
 
+
         render();
 
       },
@@ -1244,10 +1272,12 @@ function listen(uid){
           error
         );
 
+
         $("status").innerHTML =
           '<span class="dot"></span>Erreur de synchronisation';
 
-        $("status").className = "";
+        $("status").className =
+          "";
 
       }
     );
@@ -1264,8 +1294,10 @@ async function updateDay(updateFunction){
   if(!auth.currentUser)
     return;
 
+
   const dayRef =
     ref(auth.currentUser.uid);
+
 
   await runTransaction(
     db,
@@ -1274,26 +1306,31 @@ async function updateDay(updateFunction){
       const snapshot =
         await transaction.get(dayRef);
 
+
       const data =
         snapshot.exists()
         ? snapshot.data()
         : {};
+
 
       const currentTasks =
         Array.isArray(data.tasks)
         ? data.tasks
         : [];
 
+
       const currentNotes =
         typeof data.notes === "string"
         ? data.notes
         : "";
+
 
       const result =
         await updateFunction(
           currentTasks,
           currentNotes
         );
+
 
       transaction.set(
         dayRef,
@@ -1308,9 +1345,11 @@ async function updateDay(updateFunction){
             ? result.notes
             : currentNotes,
 
-          date:day,
+          date:
+            day,
 
-          updatedAt:Date.now()
+          updatedAt:
+            Date.now()
         },
         {
           merge:true
@@ -1333,8 +1372,10 @@ $("add").onclick =
     const i =
       $("taskInput");
 
+
     const t =
       i.value.trim();
+
 
     if(!t)
       return;
@@ -1347,7 +1388,8 @@ $("add").onclick =
         )
       )
       .map(
-        input => input.value
+        input =>
+          input.value
       );
 
 
@@ -1364,17 +1406,23 @@ $("add").onclick =
 
     const newTask = {
 
-      id:crypto.randomUUID(),
+      id:
+        crypto.randomUUID(),
 
-      text:t,
+      text:
+        t,
 
-      priority:$("priority").value,
+      priority:
+        $("priority").value,
 
-      assignee:selectedPeople,
+      assignee:
+        selectedPeople,
 
-      done:false,
+      done:
+        false,
 
-      comment:""
+      comment:
+        ""
 
     };
 
@@ -1391,14 +1439,17 @@ $("add").onclick =
               newTask
             ],
 
-            notes:currentNotes
+            notes:
+              currentNotes
 
           };
 
         }
       );
 
-      i.value = "";
+
+      i.value =
+        "";
 
     }
     catch(e){
@@ -1407,6 +1458,7 @@ $("add").onclick =
         "Erreur ajout tâche :",
         e
       );
+
 
       alert(
         "Impossible d'enregistrer la tâche. Vérifie la connexion."
@@ -1439,12 +1491,14 @@ $("notes").oninput =
 
     clearTimeout(timer);
 
+
     timer =
       setTimeout(
         async () => {
 
           const newNotes =
             $("notes").value;
+
 
           try{
 
@@ -1453,9 +1507,11 @@ $("notes").oninput =
 
                 return {
 
-                  tasks:currentTasks,
+                  tasks:
+                    currentTasks,
 
-                  notes:newNotes
+                  notes:
+                    newNotes
 
                 };
 
@@ -1483,7 +1539,10 @@ $("notes").oninput =
 /* COMMENTAIRE */
 /* ================================================= */
 
-async function saveComment(id,comment){
+async function saveComment(
+  id,
+  comment
+){
 
   await updateDay(
     (currentTasks,currentNotes) => {
@@ -1494,16 +1553,20 @@ async function saveComment(id,comment){
             t.id === id
             ? {
                 ...t,
-                comment:comment
+                comment:
+                  comment
               }
             : t
         );
 
+
       return {
 
-        tasks:updatedTasks,
+        tasks:
+          updatedTasks,
 
-        notes:currentNotes
+        notes:
+          currentNotes
 
       };
 
@@ -1521,20 +1584,22 @@ function updateComment(
 ){
 
   /*
-   * Sauvegarde du brouillon local.
-   * Cela permet de le remettre dans le champ
-   * si Firebase déclenche un render().
+   * Sauvegarde locale immédiate.
    */
-  commentDrafts[id] = comment;
+  commentDrafts[id] =
+    comment;
+
 
   /*
-   * Mémorisation du champ actif et de la position
-   * du curseur.
+   * On mémorise le commentaire actif.
    */
-  activeCommentId = id;
+  activeCommentId =
+    id;
+
 
   activeCommentStart =
     input.selectionStart;
+
 
   activeCommentEnd =
     input.selectionEnd;
@@ -1561,9 +1626,14 @@ function updateComment(
             comment
           );
 
+
+          status.textContent =
+            "✓ Enregistré";
+
+
           /*
-           * On ne supprime pas immédiatement le brouillon
-           * si l'utilisateur est toujours en train d'écrire.
+           * Si l'utilisateur est toujours dans le champ,
+           * on conserve le brouillon local.
            */
           if(
             activeCommentId !== id ||
@@ -1575,15 +1645,12 @@ function updateComment(
           }
 
 
-          status.textContent =
-            "✓ Enregistré";
-
-
           setTimeout(
             () => {
 
               if(status)
-                status.textContent = "";
+                status.textContent =
+                  "";
 
             },
             1200
@@ -1596,6 +1663,7 @@ function updateComment(
             "Erreur sauvegarde commentaire :",
             e
           );
+
 
           status.textContent =
             "Erreur de sauvegarde";
@@ -1626,16 +1694,20 @@ async function toggle(id){
               t.id === id
               ? {
                   ...t,
-                  done:!t.done
+                  done:
+                    !t.done
                 }
               : t
           );
 
+
         return {
 
-          tasks:updatedTasks,
+          tasks:
+            updatedTasks,
 
-          notes:currentNotes
+          notes:
+            currentNotes
 
         };
 
@@ -1668,14 +1740,18 @@ async function del(id){
 
         const updatedTasks =
           currentTasks.filter(
-            t => t.id !== id
+            t =>
+              t.id !== id
           );
+
 
         return {
 
-          tasks:updatedTasks,
+          tasks:
+            updatedTasks,
 
-          notes:currentNotes
+          notes:
+            currentNotes
 
         };
 
@@ -1717,18 +1793,24 @@ async function editTask(
               t.id === id
               ? {
                   ...t,
-                  text:newText,
-                  priority:newPriority,
-                  assignee:newAssignees
+                  text:
+                    newText,
+                  priority:
+                    newPriority,
+                  assignee:
+                    newAssignees
                 }
               : t
           );
 
+
         return {
 
-          tasks:updatedTasks,
+          tasks:
+            updatedTasks,
 
-          notes:currentNotes
+          notes:
+            currentNotes
 
         };
 
@@ -1754,7 +1836,9 @@ async function editTask(
 
 function setFilter(f){
 
-  filter = f;
+  filter =
+    f;
+
 
   document
     .querySelectorAll(
@@ -1762,15 +1846,21 @@ function setFilter(f){
     )
     .forEach(
       b =>
-        b.classList.remove("active")
+        b.classList.remove(
+          "active"
+        )
     );
+
 
   $(
     f === "done"
     ? "doneFilter"
     : f
   )
-  .classList.add("active");
+  .classList.add(
+    "active"
+  );
+
 
   render();
 
@@ -1780,8 +1870,10 @@ function setFilter(f){
 $("all").onclick =
   () => setFilter("all");
 
+
 $("todo").onclick =
   () => setFilter("todo");
+
 
 $("doneFilter").onclick =
   () => setFilter("done");
@@ -1796,14 +1888,18 @@ function setPersonFilter(person){
   personFilter =
     person;
 
+
   document
     .querySelectorAll(
       "#peopleFilters button"
     )
     .forEach(
       b =>
-        b.classList.remove("active")
+        b.classList.remove(
+          "active"
+        )
     );
+
 
   const buttonId =
 
@@ -1823,6 +1919,7 @@ function setPersonFilter(person){
     .classList
     .add("active");
 
+
   render();
 
 }
@@ -1831,11 +1928,14 @@ function setPersonFilter(person){
 $("allPeople").onclick =
   () => setPersonFilter("all");
 
+
 $("jeanLucFilter").onclick =
   () => setPersonFilter("Jean-Luc");
 
+
 $("catherineFilter").onclick =
   () => setPersonFilter("Catherine");
+
 
 $("yannisFilter").onclick =
   () => setPersonFilter("Yannis");
@@ -1852,9 +1952,21 @@ function render(){
 
 
   /*
-   * AVANT de reconstruire la liste :
-   * on mémorise le champ commentaire actuellement actif.
+   * =================================================
+   * PROTECTION DU COMMENTAIRE SUR TABLETTE
+   * =================================================
+   *
+   * C'est le point essentiel de cette version.
+   *
+   * Si le curseur est actuellement dans un commentaire,
+   * on NE VIDE PAS box et on NE RECONSTRUIT PAS les tâches.
+   *
+   * Firebase peut donc envoyer une nouvelle donnée,
+   * sans détruire le textarea.
+   *
+   * Le clavier tactile reste ainsi ouvert.
    */
+
   const focusedComment =
     document.activeElement &&
     document.activeElement.classList.contains(
@@ -1867,19 +1979,18 @@ function render(){
   if(focusedComment){
 
     activeCommentId =
-      focusedComment.dataset.taskId || null;
+      focusedComment.dataset.taskId ||
+      null;
+
 
     activeCommentStart =
       focusedComment.selectionStart;
 
+
     activeCommentEnd =
       focusedComment.selectionEnd;
 
-    /*
-     * On garde aussi la valeur actuelle.
-     * Cela évite de perdre une lettre tapée pendant
-     * qu'une mise à jour Firebase arrive.
-     */
+
     if(activeCommentId){
 
       commentDrafts[activeCommentId] =
@@ -1887,10 +1998,27 @@ function render(){
 
     }
 
+
+    /*
+     * IMPORTANT :
+     *
+     * Pas de box.innerHTML = "" ici.
+     * Le DOM du commentaire reste intact.
+     */
+    updateStatistics();
+
+    return;
+
   }
 
 
-  box.innerHTML = "";
+  /*
+   * Aucun commentaire n'est actif.
+   * On peut reconstruire normalement.
+   */
+
+  box.innerHTML =
+    "";
 
 
   const shown =
@@ -1903,16 +2031,20 @@ function render(){
 
           ||
 
-          filter === "todo" && !t.done
+          filter === "todo" &&
+          !t.done
 
           ||
 
-          filter === "done" && t.done;
+          filter === "done" &&
+          t.done;
 
 
         const people =
 
-          Array.isArray(t.assignee)
+          Array.isArray(
+            t.assignee
+          )
 
           ? t.assignee
 
@@ -1953,38 +2085,58 @@ function render(){
     t => {
 
       const row =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       row.className =
         "task";
 
 
       const cb =
-        document.createElement("input");
+        document.createElement(
+          "input"
+        );
+
 
       cb.type =
         "checkbox";
 
+
       cb.className =
         "check";
+
 
       cb.checked =
         t.done;
 
+
       cb.onchange =
-        () => toggle(t.id);
+        () =>
+          toggle(t.id);
 
 
       const mid =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
 
 
       const title =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       title.className =
         "tasktitle" +
-        (t.done ? " done" : "");
+        (
+          t.done
+          ? " done"
+          : ""
+        );
+
 
       title.textContent =
         t.text;
@@ -1992,7 +2144,9 @@ function render(){
 
       const people =
 
-        Array.isArray(t.assignee)
+        Array.isArray(
+          t.assignee
+        )
 
         ? t.assignee
 
@@ -2002,7 +2156,10 @@ function render(){
 
 
       const responsible =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       responsible.className =
         "assignee-badges";
@@ -2012,32 +2169,51 @@ function render(){
         person => {
 
           const badge =
-            document.createElement("span");
+            document.createElement(
+              "span"
+            );
+
 
           badge.className =
             "assignee-badge";
 
 
-          if(person === "Yannis")
+          if(
+            person === "Yannis"
+          ){
+
             badge.classList.add(
               "assignee-yannis"
             );
 
+          }
 
-          if(person === "Jean-Luc")
+
+          if(
+            person === "Jean-Luc"
+          ){
+
             badge.classList.add(
               "assignee-jean-luc"
             );
 
+          }
 
-          if(person === "Catherine")
+
+          if(
+            person === "Catherine"
+          ){
+
             badge.classList.add(
               "assignee-catherine"
             );
 
+          }
+
 
           badge.textContent =
             person;
+
 
           responsible.append(
             badge
@@ -2048,27 +2224,38 @@ function render(){
 
 
       const b =
-        document.createElement("span");
+        document.createElement(
+          "span"
+        );
+
 
       b.className =
-        "badge " + t.priority;
+        "badge " +
+        t.priority;
+
 
       b.textContent =
 
         t.priority === "high"
+
         ? "URGENT"
 
         : t.priority === "med"
+
         ? "NORMAL"
 
         : "BASSE";
 
 
       const info =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       info.style.marginTop =
         "5px";
+
 
       info.append(
         responsible,
@@ -2081,45 +2268,53 @@ function render(){
       /* ================================================= */
 
       const commentContainer =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       commentContainer.className =
         "task-comment";
 
 
       const commentLabel =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       commentLabel.className =
         "task-comment-label";
+
 
       commentLabel.textContent =
         "Commentaire";
 
 
       const commentInput =
-        document.createElement("textarea");
+        document.createElement(
+          "textarea"
+        );
+
 
       commentInput.className =
         "task-comment-input";
 
+
       commentInput.rows =
         1;
+
 
       commentInput.placeholder =
         "Ajouter un commentaire...";
 
 
-      /*
-       * Identifiant de la tâche associé au champ.
-       */
       commentInput.dataset.taskId =
         t.id;
 
 
       /*
-       * Si un brouillon est actuellement en cours,
-       * on l'affiche plutôt que l'ancienne valeur Firebase.
+       * On affiche le brouillon local s'il existe.
        */
       commentInput.value =
 
@@ -2130,15 +2325,25 @@ function render(){
 
         ? commentDrafts[t.id]
 
-        : (t.comment || "");
+        : (
+            t.comment ||
+            ""
+          );
 
 
       const commentStatus =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       commentStatus.className =
         "comment-status";
 
+
+      /* ================================================= */
+      /* FOCUS COMMENTAIRE */
+      /* ================================================= */
 
       commentInput.addEventListener(
         "focus",
@@ -2147,8 +2352,10 @@ function render(){
           activeCommentId =
             t.id;
 
+
           activeCommentStart =
             commentInput.selectionStart;
+
 
           activeCommentEnd =
             commentInput.selectionEnd;
@@ -2164,8 +2371,10 @@ function render(){
           activeCommentId =
             t.id;
 
+
           activeCommentStart =
             commentInput.selectionStart;
+
 
           activeCommentEnd =
             commentInput.selectionEnd;
@@ -2179,14 +2388,17 @@ function render(){
         () => {
 
           if(
-            document.activeElement === commentInput
+            document.activeElement ===
+            commentInput
           ){
 
             activeCommentId =
               t.id;
 
+
             activeCommentStart =
               commentInput.selectionStart;
+
 
             activeCommentEnd =
               commentInput.selectionEnd;
@@ -2197,6 +2409,10 @@ function render(){
       );
 
 
+      /* ================================================= */
+      /* ECRITURE COMMENTAIRE */
+      /* ================================================= */
+
       commentInput.addEventListener(
         "input",
         () => {
@@ -2204,11 +2420,20 @@ function render(){
           activeCommentId =
             t.id;
 
+
           activeCommentStart =
             commentInput.selectionStart;
 
+
           activeCommentEnd =
             commentInput.selectionEnd;
+
+
+          /*
+           * Sauvegarde locale immédiate.
+           */
+          commentDrafts[t.id] =
+            commentInput.value;
 
 
           updateComment(
@@ -2216,6 +2441,56 @@ function render(){
             commentInput.value,
             commentInput,
             commentStatus
+          );
+
+        }
+      );
+
+
+      /*
+       * Quand l'utilisateur quitte le champ,
+       * on libère le verrou après un petit délai.
+       */
+      commentInput.addEventListener(
+        "blur",
+        () => {
+
+          commentDrafts[t.id] =
+            commentInput.value;
+
+
+          setTimeout(
+            () => {
+
+              /*
+               * Si l'utilisateur n'est pas revenu
+               * dans ce commentaire, on libère le verrou.
+               */
+              if(
+                document.activeElement !==
+                commentInput
+              ){
+
+                if(
+                  activeCommentId ===
+                  t.id
+                ){
+
+                  activeCommentId =
+                    null;
+
+                  activeCommentStart =
+                    0;
+
+                  activeCommentEnd =
+                    0;
+
+                }
+
+              }
+
+            },
+            700
           );
 
         }
@@ -2234,7 +2509,10 @@ function render(){
       /* ================================================= */
 
       const right =
-        document.createElement("div");
+        document.createElement(
+          "div"
+        );
+
 
       right.className =
         "task-actions";
@@ -2245,13 +2523,18 @@ function render(){
       /* ================================================= */
 
       const edit =
-        document.createElement("button");
+        document.createElement(
+          "button"
+        );
+
 
       edit.className =
         "edit";
 
+
       edit.textContent =
         "✏️";
+
 
       edit.title =
         "Modifier la tâche";
@@ -2261,27 +2544,38 @@ function render(){
         () => {
 
           const form =
-            document.createElement("div");
+            document.createElement(
+              "div"
+            );
+
 
           form.className =
             "edit-form";
 
 
           const input =
-            document.createElement("input");
+            document.createElement(
+              "input"
+            );
+
 
           input.className =
             "edit-text";
+
 
           input.value =
             t.text;
 
 
           const select =
-            document.createElement("select");
+            document.createElement(
+              "select"
+            );
+
 
           select.className =
             "edit-priority";
+
 
           select.innerHTML = `
 
@@ -2299,12 +2593,16 @@ function render(){
 
           `;
 
+
           select.value =
             t.priority;
 
 
           const editAssignees =
-            document.createElement("div");
+            document.createElement(
+              "div"
+            );
+
 
           editAssignees.className =
             "assignees";
@@ -2312,7 +2610,9 @@ function render(){
 
           const currentPeople =
 
-            Array.isArray(t.assignee)
+            Array.isArray(
+              t.assignee
+            )
 
             ? t.assignee
 
@@ -2330,7 +2630,10 @@ function render(){
             person => {
 
               const label =
-                document.createElement("label");
+                document.createElement(
+                  "label"
+                );
+
 
               label.className =
                 "person-checkbox " +
@@ -2347,13 +2650,18 @@ function render(){
 
 
               const checkbox =
-                document.createElement("input");
+                document.createElement(
+                  "input"
+                );
+
 
               checkbox.type =
                 "checkbox";
 
+
               checkbox.value =
                 person;
+
 
               checkbox.checked =
                 currentPeople.includes(
@@ -2362,7 +2670,10 @@ function render(){
 
 
               const span =
-                document.createElement("span");
+                document.createElement(
+                  "span"
+                );
+
 
               span.textContent =
                 person;
@@ -2373,6 +2684,7 @@ function render(){
                 span
               );
 
+
               editAssignees.append(
                 label
               );
@@ -2382,13 +2694,18 @@ function render(){
 
 
           const saveBtn =
-            document.createElement("button");
+            document.createElement(
+              "button"
+            );
+
 
           saveBtn.className =
             "save-edit";
 
+
           saveBtn.textContent =
             "💾";
+
 
           saveBtn.title =
             "Enregistrer";
@@ -2399,6 +2716,7 @@ function render(){
 
               const text =
                 input.value.trim();
+
 
               if(!text)
                 return;
@@ -2416,7 +2734,9 @@ function render(){
                 );
 
 
-              if(!selectedPeople.length){
+              if(
+                !selectedPeople.length
+              ){
 
                 alert(
                   "Merci de sélectionner au moins une personne."
@@ -2438,19 +2758,26 @@ function render(){
 
 
           const cancelBtn =
-            document.createElement("button");
+            document.createElement(
+              "button"
+            );
+
 
           cancelBtn.className =
             "cancel-edit";
 
+
           cancelBtn.textContent =
             "❌";
+
 
           cancelBtn.title =
             "Annuler";
 
+
           cancelBtn.onclick =
-            () => render();
+            () =>
+              render();
 
 
           form.append(
@@ -2460,14 +2787,18 @@ function render(){
           );
 
 
-          mid.innerHTML = "";
+          mid.innerHTML =
+            "";
+
 
           mid.append(
             form
           );
 
 
-          right.innerHTML = "";
+          right.innerHTML =
+            "";
+
 
           right.append(
             saveBtn,
@@ -2487,19 +2818,26 @@ function render(){
       /* ================================================= */
 
       const d =
-        document.createElement("button");
+        document.createElement(
+          "button"
+        );
+
 
       d.className =
         "delete";
 
+
       d.textContent =
         "×";
+
 
       d.title =
         "Supprimer la tâche";
 
+
       d.onclick =
-        () => del(t.id);
+        () =>
+          del(t.id);
 
 
       right.append(
@@ -2530,106 +2868,27 @@ function render(){
   );
 
 
-  /*
-   * APRÈS reconstruction :
-   * on remet automatiquement le focus dans le commentaire
-   * qui était en train d'être modifié.
-   */
-  if(activeCommentId){
+  updateStatistics();
 
-    const idToRestore =
-      activeCommentId;
-
-    const startToRestore =
-      activeCommentStart;
-
-    const endToRestore =
-      activeCommentEnd;
+}
 
 
-    setTimeout(
-      () => {
+/* ================================================= */
+/* STATISTIQUES */
+/* ================================================= */
 
-        const newInput =
-          box.querySelector(
-            `.task-comment-input[data-task-id="${CSS.escape(idToRestore)}"]`
-          );
-
-
-        if(!newInput)
-          return;
-
-
-        /*
-         * On remet le brouillon dans le champ.
-         */
-        if(
-          Object.prototype.hasOwnProperty.call(
-            commentDrafts,
-            idToRestore
-          )
-        ){
-
-          newInput.value =
-            commentDrafts[idToRestore];
-
-        }
-
-
-        /*
-         * Remettre le focus.
-         */
-        newInput.focus();
-
-
-        /*
-         * Remettre le curseur exactement
-         * là où l'utilisateur écrivait.
-         */
-        try{
-
-          const length =
-            newInput.value.length;
-
-          newInput.setSelectionRange(
-            Math.min(
-              startToRestore,
-              length
-            ),
-            Math.min(
-              endToRestore,
-              length
-            )
-          );
-
-        }
-        catch(e){
-
-          console.warn(
-            "Impossible de restaurer la position du curseur :",
-            e
-          );
-
-        }
-
-      },
-      0
-    );
-
-  }
-
-
-  /* ================================================= */
-  /* STATISTIQUES */
-  /* ================================================= */
+function updateStatistics(){
 
   const total =
     tasks.length;
 
+
   const done =
     tasks.filter(
-      t => t.done
+      t =>
+        t.done
     ).length;
+
 
   const p =
 
@@ -2645,14 +2904,18 @@ function render(){
   $("total").textContent =
     total;
 
+
   $("done").textContent =
     done;
+
 
   $("remain").textContent =
     total - done;
 
+
   $("pct").textContent =
     p + "%";
+
 
   $("fill").style.width =
     p + "%";
@@ -2694,8 +2957,10 @@ onAuthStateChanged(
       $("login").style.display =
         "flex";
 
+
       $("app").style.display =
         "none";
+
 
       return;
 
@@ -2705,12 +2970,14 @@ onAuthStateChanged(
     $("login").style.display =
       "none";
 
+
     $("app").style.display =
       "block";
 
 
     $("status").innerHTML =
       '<span class="dot"></span>Synchronisation active';
+
 
     $("status").className =
       "online";
