@@ -967,6 +967,15 @@ let timer = null;
 
 const commentTimers = {};
 
+/*
+ * Permet de conserver le commentaire en cours
+ * même lorsque Firebase déclenche un nouveau render().
+ */
+let activeCommentId = null;
+let activeCommentStart = 0;
+let activeCommentEnd = 0;
+let commentDrafts = {};
+
 
 const $ =
   x => document.getElementById(x);
@@ -1511,13 +1520,35 @@ function updateComment(
   status
 ){
 
+  /*
+   * Sauvegarde du brouillon local.
+   * Cela permet de le remettre dans le champ
+   * si Firebase déclenche un render().
+   */
+  commentDrafts[id] = comment;
+
+  /*
+   * Mémorisation du champ actif et de la position
+   * du curseur.
+   */
+  activeCommentId = id;
+
+  activeCommentStart =
+    input.selectionStart;
+
+  activeCommentEnd =
+    input.selectionEnd;
+
+
   if(commentTimers[id])
     clearTimeout(
       commentTimers[id]
     );
 
+
   status.textContent =
     "Enregistrement...";
+
 
   commentTimers[id] =
     setTimeout(
@@ -1530,8 +1561,23 @@ function updateComment(
             comment
           );
 
+          /*
+           * On ne supprime pas immédiatement le brouillon
+           * si l'utilisateur est toujours en train d'écrire.
+           */
+          if(
+            activeCommentId !== id ||
+            document.activeElement !== input
+          ){
+
+            delete commentDrafts[id];
+
+          }
+
+
           status.textContent =
             "✓ Enregistré";
+
 
           setTimeout(
             () => {
@@ -1804,6 +1850,46 @@ function render(){
   const box =
     $("tasks");
 
+
+  /*
+   * AVANT de reconstruire la liste :
+   * on mémorise le champ commentaire actuellement actif.
+   */
+  const focusedComment =
+    document.activeElement &&
+    document.activeElement.classList.contains(
+      "task-comment-input"
+    )
+    ? document.activeElement
+    : null;
+
+
+  if(focusedComment){
+
+    activeCommentId =
+      focusedComment.dataset.taskId || null;
+
+    activeCommentStart =
+      focusedComment.selectionStart;
+
+    activeCommentEnd =
+      focusedComment.selectionEnd;
+
+    /*
+     * On garde aussi la valeur actuelle.
+     * Cela évite de perdre une lettre tapée pendant
+     * qu'une mise à jour Firebase arrive.
+     */
+    if(activeCommentId){
+
+      commentDrafts[activeCommentId] =
+        focusedComment.value;
+
+    }
+
+  }
+
+
   box.innerHTML = "";
 
 
@@ -1990,7 +2076,9 @@ function render(){
       );
 
 
+      /* ================================================= */
       /* COMMENTAIRE */
+      /* ================================================= */
 
       const commentContainer =
         document.createElement("div");
@@ -2021,8 +2109,28 @@ function render(){
       commentInput.placeholder =
         "Ajouter un commentaire...";
 
+
+      /*
+       * Identifiant de la tâche associé au champ.
+       */
+      commentInput.dataset.taskId =
+        t.id;
+
+
+      /*
+       * Si un brouillon est actuellement en cours,
+       * on l'affiche plutôt que l'ancienne valeur Firebase.
+       */
       commentInput.value =
-        t.comment || "";
+
+        Object.prototype.hasOwnProperty.call(
+          commentDrafts,
+          t.id
+        )
+
+        ? commentDrafts[t.id]
+
+        : (t.comment || "");
 
 
       const commentStatus =
@@ -2033,8 +2141,75 @@ function render(){
 
 
       commentInput.addEventListener(
+        "focus",
+        () => {
+
+          activeCommentId =
+            t.id;
+
+          activeCommentStart =
+            commentInput.selectionStart;
+
+          activeCommentEnd =
+            commentInput.selectionEnd;
+
+        }
+      );
+
+
+      commentInput.addEventListener(
+        "click",
+        () => {
+
+          activeCommentId =
+            t.id;
+
+          activeCommentStart =
+            commentInput.selectionStart;
+
+          activeCommentEnd =
+            commentInput.selectionEnd;
+
+        }
+      );
+
+
+      commentInput.addEventListener(
+        "keyup",
+        () => {
+
+          if(
+            document.activeElement === commentInput
+          ){
+
+            activeCommentId =
+              t.id;
+
+            activeCommentStart =
+              commentInput.selectionStart;
+
+            activeCommentEnd =
+              commentInput.selectionEnd;
+
+          }
+
+        }
+      );
+
+
+      commentInput.addEventListener(
         "input",
         () => {
+
+          activeCommentId =
+            t.id;
+
+          activeCommentStart =
+            commentInput.selectionStart;
+
+          activeCommentEnd =
+            commentInput.selectionEnd;
+
 
           updateComment(
             t.id,
@@ -2054,7 +2229,9 @@ function render(){
       );
 
 
+      /* ================================================= */
       /* ACTIONS */
+      /* ================================================= */
 
       const right =
         document.createElement("div");
@@ -2063,7 +2240,9 @@ function render(){
         "task-actions";
 
 
+      /* ================================================= */
       /* MODIFIER */
+      /* ================================================= */
 
       const edit =
         document.createElement("button");
@@ -2303,7 +2482,9 @@ function render(){
         };
 
 
+      /* ================================================= */
       /* SUPPRIMER */
+      /* ================================================= */
 
       const d =
         document.createElement("button");
@@ -2349,7 +2530,98 @@ function render(){
   );
 
 
+  /*
+   * APRÈS reconstruction :
+   * on remet automatiquement le focus dans le commentaire
+   * qui était en train d'être modifié.
+   */
+  if(activeCommentId){
+
+    const idToRestore =
+      activeCommentId;
+
+    const startToRestore =
+      activeCommentStart;
+
+    const endToRestore =
+      activeCommentEnd;
+
+
+    setTimeout(
+      () => {
+
+        const newInput =
+          box.querySelector(
+            `.task-comment-input[data-task-id="${CSS.escape(idToRestore)}"]`
+          );
+
+
+        if(!newInput)
+          return;
+
+
+        /*
+         * On remet le brouillon dans le champ.
+         */
+        if(
+          Object.prototype.hasOwnProperty.call(
+            commentDrafts,
+            idToRestore
+          )
+        ){
+
+          newInput.value =
+            commentDrafts[idToRestore];
+
+        }
+
+
+        /*
+         * Remettre le focus.
+         */
+        newInput.focus();
+
+
+        /*
+         * Remettre le curseur exactement
+         * là où l'utilisateur écrivait.
+         */
+        try{
+
+          const length =
+            newInput.value.length;
+
+          newInput.setSelectionRange(
+            Math.min(
+              startToRestore,
+              length
+            ),
+            Math.min(
+              endToRestore,
+              length
+            )
+          );
+
+        }
+        catch(e){
+
+          console.warn(
+            "Impossible de restaurer la position du curseur :",
+            e
+          );
+
+        }
+
+      },
+      0
+    );
+
+  }
+
+
+  /* ================================================= */
   /* STATISTIQUES */
+  /* ================================================= */
 
   const total =
     tasks.length;
@@ -2386,7 +2658,9 @@ function render(){
     p + "%";
 
 
+  /* ================================================= */
   /* PRIORITES */
+  /* ================================================= */
 
   const high =
     tasks.filter(
