@@ -752,62 +752,6 @@ button:disabled{
   line-height:1.4;
 }
 
-
-/* ================================================= */
-/* PHOTOS AJOUTEES DANS WORKBOARD */
-/* ================================================= */
-
-.photo-picker{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  flex-wrap:wrap;
-  margin-top:9px;
-}
-
-.photo-picker input[type="file"]{
-  padding:9px;
-  background:#f7f9fb;
-  font-size:13px;
-}
-
-.photo-preview{
-  display:flex;
-  flex-wrap:wrap;
-  gap:7px;
-  margin-top:8px;
-}
-
-.photo-thumb{
-  width:78px;
-  height:78px;
-  object-fit:cover;
-  border-radius:10px;
-  border:1px solid #d7dfe6;
-  cursor:pointer;
-}
-
-.attached-photos{
-  display:flex;
-  flex-wrap:wrap;
-  gap:7px;
-  margin-top:8px;
-}
-
-.attached-photo{
-  width:82px;
-  height:82px;
-  object-fit:cover;
-  border-radius:10px;
-  border:1px solid #d7dfe6;
-  cursor:pointer;
-}
-
-.photo-help{
-  font-size:11px;
-  color:#7b8791;
-}
-
 /* ================================================= */
 /* RESPONSIVE */
 /* ================================================= */
@@ -1168,18 +1112,6 @@ button:disabled{
 
   </div>
 
-  <div class="photo-picker">
-    <input
-      id="notePhotos"
-      type="file"
-      accept="image/*"
-      multiple
-    >
-    <span class="photo-help">Ajouter des photos depuis la galerie (max. 3)</span>
-  </div>
-
-  <div id="notePhotoPreview" class="photo-preview"></div>
-
 </div>
 
 <button
@@ -1295,18 +1227,6 @@ button:disabled{
     </div>
 
   </div>
-
-  <div class="photo-picker">
-    <input
-      id="taskPhotos"
-      type="file"
-      accept="image/*"
-      multiple
-    >
-    <span class="photo-help">Photos depuis la galerie (max. 3)</span>
-  </div>
-
-  <div id="taskPhotoPreview" class="photo-preview"></div>
 
   <button
     class="primary"
@@ -1426,8 +1346,6 @@ from
 import {
   getFirestore,
   doc,
-  collection,
-  getDocs,
   onSnapshot,
   setDoc,
   runTransaction
@@ -1455,15 +1373,19 @@ const db =
 /* ================================================= */
 
 const day =
-  new Date()
-    .toISOString()
-    .slice(0,10);
+  new Intl.DateTimeFormat(
+    "en-CA",
+    {
+      timeZone:"Europe/Paris",
+      year:"numeric",
+      month:"2-digit",
+      day:"2-digit"
+    }
+  ).format(new Date());
 
 let tasks = [];
 
 let notes = [];
-
-let photosById = {};
 
 let filter = "all";
 
@@ -1498,112 +1420,6 @@ function getPersonPhoto(name){
   return personPhotos[name]
     || "Yannis.png";
 
-}
-
-/* ================================================= */
-/* PHOTOS */
-/* ================================================= */
-
-async function compressPhoto(file){
-
-  if(!file || !file.type.startsWith("image/"))
-    throw new Error("Fichier image invalide.");
-
-  const url = URL.createObjectURL(file);
-
-  try{
-    const img = new Image();
-    await new Promise((resolve,reject)=>{
-      img.onload=resolve;
-      img.onerror=reject;
-      img.src=url;
-    });
-
-    const maxSide = 900;
-    const scale = Math.min(1, maxSide / Math.max(img.width,img.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(img.width*scale));
-    canvas.height = Math.max(1, Math.round(img.height*scale));
-    const ctx = canvas.getContext("2d");
-    ctx.drawImage(img,0,0,canvas.width,canvas.height);
-
-    let quality = 0.62;
-    let data = canvas.toDataURL("image/jpeg",quality);
-
-    while(data.length > 135000 && quality > 0.35){
-      quality -= 0.07;
-      data = canvas.toDataURL("image/jpeg",quality);
-    }
-
-    return data;
-  }finally{
-    URL.revokeObjectURL(url);
-  }
-}
-
-async function compressSelectedPhotos(input){
-  const files = Array.from(input.files || []).slice(0,3);
-  const photos=[];
-  for(const file of files){
-    photos.push(await compressPhoto(file));
-  }
-  return photos;
-}
-
-function showPhotoPreview(input, boxId){
-  const box=$(boxId);
-  box.innerHTML="";
-  Array.from(input.files || []).slice(0,3).forEach(file=>{
-    const url=URL.createObjectURL(file);
-    const img=document.createElement("img");
-    img.className="photo-thumb";
-    img.src=url;
-    img.onload=()=>URL.revokeObjectURL(url);
-    box.append(img);
-  });
-}
-
-function renderPhotos(ids, className="attached-photo"){
-  const box=document.createElement("div");
-  box.className="attached-photos";
-  (Array.isArray(ids)?ids:[]).forEach(id=>{
-    const data=photosById[id];
-    if(!data) return;
-    const img=document.createElement("img");
-    img.className=className;
-    img.src=data.data;
-    img.alt="Photo";
-    img.title="Cliquer pour agrandir";
-    img.onclick=()=>window.open(data.data,"_blank");
-    box.append(img);
-  });
-  return box;
-}
-
-async function savePhotos(photoData, parentType, parentId){
-  if(!currentUser || !photoData.length) return [];
-  const ids=[];
-  for(const data of photoData){
-    const id=crypto.randomUUID();
-    ids.push(id);
-    await setDoc(
-      doc(db,"users",currentUser.uid,"days",day,"photos",id),
-      {id,data,parentType,parentId,author:selectedUser,createdAt:Date.now()}
-    );
-  }
-  return ids;
-}
-
-async function loadPhotos(uid){
-  try{
-    const snap=await getDocs(collection(db,"users",uid,"days",day,"photos"));
-    photosById={};
-    snap.forEach(d=>{ photosById[d.id]=d.data(); });
-    render();
-    renderNotes();
-  }catch(e){
-    console.error("Erreur chargement photos :",e);
-  }
 }
 
 function updateCurrentUserAvatar(){
@@ -2054,10 +1870,35 @@ function listen(uid){
             ? snapshot.data()
             : {};
 
-        tasks =
-          Array.isArray(data.tasks)
-            ? data.tasks
-            : [];
+        /*
+         * SECURITE : ne jamais remplacer les tâches affichées par []
+         * si le champ tasks est absent ou invalide. Une ancienne version
+         * de WorkBoard ou une écriture incomplète ne doit pas vider l'écran.
+         */
+        if(Object.prototype.hasOwnProperty.call(data,"tasks")){
+
+          if(Array.isArray(data.tasks)){
+
+            tasks = data.tasks;
+
+          }
+          else{
+
+            console.warn(
+              "WorkBoard : champ tasks invalide, conservation des tâches locales.",
+              data.tasks
+            );
+
+          }
+
+        }
+        else if(snapshot.exists()){
+
+          console.warn(
+            "WorkBoard : champ tasks absent, conservation des tâches locales."
+          );
+
+        }
 
         if(
           Array.isArray(data.notes)
@@ -2097,7 +1938,6 @@ function listen(uid){
         render();
 
         renderNotes();
-        loadPhotos(uid);
 
         if(!snapshot.exists()){
 
@@ -2138,6 +1978,53 @@ function listen(uid){
 }
 
 /* ================================================= */
+/* PROTECTION CONTRE UN VIDAGE ACCIDENTEL */
+/* ================================================= */
+
+function safeTasksFromData(data){
+
+  if(!Object.prototype.hasOwnProperty.call(data,"tasks")){
+
+    return null;
+
+  }
+
+  if(!Array.isArray(data.tasks)){
+
+    return null;
+
+  }
+
+  return data.tasks;
+
+}
+
+function blockAccidentalTaskWipe(currentTasks,newTasks,action){
+
+  /*
+   * Une action normale de WorkBoard ne peut pas faire passer
+   * plusieurs tâches directement à zéro. On bloque ce cas.
+   * La suppression de la dernière tâche reste autorisée (1 -> 0).
+   */
+  if(
+    currentTasks.length > 1 &&
+    newTasks.length === 0
+  ){
+
+    console.error(
+      "WorkBoard : écriture bloquée pour éviter un vidage accidentel des tâches.",
+      {action,currentCount:currentTasks.length}
+    );
+
+    throw new Error(
+      "Écriture bloquée : tentative de vider toutes les tâches."
+    );
+
+  }
+
+}
+
+/* ================================================= */
 /* AJOUT TACHE SECURISE */
 /* ================================================= */
 
@@ -2166,9 +2053,15 @@ async function addTaskSafely(task){
           : {};
 
       const currentTasks =
-        Array.isArray(data.tasks)
-          ? data.tasks
-          : [];
+        safeTasksFromData(data);
+
+      if(currentTasks === null){
+
+        throw new Error(
+          "Impossible d'ajouter : le champ tasks est absent ou invalide."
+        );
+
+      }
 
       transaction.set(
         taskRef,
@@ -2223,9 +2116,15 @@ async function updateTaskSafely(
         snap.data();
 
       const currentTasks =
-        Array.isArray(data.tasks)
-          ? data.tasks
-          : [];
+        safeTasksFromData(data);
+
+      if(currentTasks === null){
+
+        throw new Error(
+          "Impossible de modifier : le champ tasks est absent ou invalide."
+        );
+
+      }
 
       const index =
         currentTasks.findIndex(
@@ -2249,6 +2148,12 @@ async function updateTaskSafely(
               ? updatedTask
               : task
         );
+
+      blockAccidentalTaskWipe(
+        currentTasks,
+        newTasks,
+        "modification"
+      );
 
       transaction.set(
         taskRef,
@@ -2297,14 +2202,26 @@ async function deleteTaskSafely(id){
         snap.data();
 
       const currentTasks =
-        Array.isArray(data.tasks)
-          ? data.tasks
-          : [];
+        safeTasksFromData(data);
+
+      if(currentTasks === null){
+
+        throw new Error(
+          "Impossible de supprimer : le champ tasks est absent ou invalide."
+        );
+
+      }
 
       const newTasks =
         currentTasks.filter(
           task => task.id !== id
         );
+
+      blockAccidentalTaskWipe(
+        currentTasks,
+        newTasks,
+        "suppression"
+      );
 
       transaction.set(
         taskRef,
@@ -2360,33 +2277,30 @@ $("add").onclick =
     }
 
     const newTask = {
+
       id:crypto.randomUUID(),
+
       text:text,
-      priority:$('priority').value,
-      assignee:selectedPeople,
+
+      priority:
+        $("priority").value,
+
+      assignee:
+        selectedPeople,
+
       done:false,
-      comments:[],
-      photos:[]
+
+      comments:[]
+
     };
 
-    let taskPhotos=[];
-    try{
-      taskPhotos=await compressSelectedPhotos($("taskPhotos"));
-    }catch(e){
-      alert("Impossible de préparer une des photos.");
-      return;
-    }
-
     try{
 
-      await addTaskSafely(newTask);
-      if(taskPhotos.length){
-        const ids=await savePhotos(taskPhotos,"task",newTask.id);
-        await updateTaskSafely(newTask.id,t=>({...t,photos:ids}));
-      }
+      await addTaskSafely(
+        newTask
+      );
+
       input.value = "";
-      $("taskPhotos").value = "";
-      $("taskPhotoPreview").innerHTML = "";
 
     }
     catch(e){
@@ -2403,9 +2317,6 @@ $("add").onclick =
     }
 
   };
-
-$("taskPhotos").addEventListener("change",()=>showPhotoPreview($("taskPhotos"),"taskPhotoPreview"));
-$("notePhotos").addEventListener("change",()=>showPhotoPreview($("notePhotos"),"notePhotoPreview"));
 
 /* ================================================= */
 /* ENTER POUR AJOUTER */
@@ -2430,7 +2341,7 @@ $("taskInput").onkeydown =
 /* AJOUT NOTE SECURISE */
 /* ================================================= */
 
-async function addNoteSafely(text, photoIds=[]){
+async function addNoteSafely(text){
 
   if(!currentUser || !selectedUser)
     return;
@@ -2448,9 +2359,7 @@ async function addNoteSafely(text, photoIds=[]){
 
     text:text,
 
-    createdAt:Date.now(),
-
-    photos:photoIds
+    createdAt:Date.now()
 
   };
 
@@ -2634,13 +2543,12 @@ $("addNote").onclick =
       true;
 
     try{
-      const photoData=await compressSelectedPhotos($("notePhotos"));
-      const tempId=crypto.randomUUID();
-      const photoIds=await savePhotos(photoData,"note",tempId);
-      await addNoteSafely(text,photoIds);
+
+      await addNoteSafely(
+        text
+      );
+
       input.value = "";
-      $("notePhotos").value = "";
-      $("notePhotoPreview").innerHTML = "";
 
     }
     catch(e){
@@ -2879,8 +2787,7 @@ function renderNotes(){
 
       element.append(
         head,
-        text,
-        renderPhotos(note.photos)
+        text
       );
 
       box.append(
@@ -2922,8 +2829,7 @@ function formatDate(timestamp){
 
 async function addCommentSafely(
   taskId,
-  text,
-  photoIds=[]
+  text
 ){
 
   if(
@@ -2945,9 +2851,7 @@ async function addCommentSafely(
 
     text:text,
 
-    createdAt:Date.now(),
-
-    photos:photoIds
+    createdAt:Date.now()
 
   };
 
@@ -3195,8 +3099,7 @@ function createDiscussion(
 
         message.append(
           head,
-          text,
-          renderPhotos(comment.photos)
+          text
         );
 
         messages.append(
@@ -3231,19 +3134,6 @@ function createDiscussion(
   input.placeholder =
     "Écrire un commentaire...";
 
-  const photoInput=document.createElement("input");
-  photoInput.type="file";
-  photoInput.accept="image/*";
-  photoInput.multiple=true;
-  photoInput.style.display="none";
-
-  const photoButton=document.createElement("button");
-  photoButton.type="button";
-  photoButton.className="secondary";
-  photoButton.textContent="📷";
-  photoButton.title="Ajouter des photos";
-  photoButton.onclick=()=>photoInput.click();
-
   const send =
     document.createElement(
       "button"
@@ -3271,17 +3161,21 @@ function createDiscussion(
     if(!text)
       return;
 
-    send.disabled = true;
-    status.textContent = "Enregistrement...";
+    send.disabled =
+      true;
+
+    status.textContent =
+      "Enregistrement...";
 
     try{
-      const photoData=await compressSelectedPhotos(photoInput);
-      const commentId=crypto.randomUUID();
-      const photoIds=await savePhotos(photoData,"comment",commentId);
-      await addCommentSafely(task.id,text,photoIds);
 
-      input.value = "";
-      photoInput.value = "";
+      await addCommentSafely(
+        task.id,
+        text
+      );
+
+      input.value =
+        "";
 
       status.textContent =
         "✓ Envoyé";
@@ -3338,9 +3232,7 @@ function createDiscussion(
 
   form.append(
     input,
-    photoButton,
-    send,
-    photoInput
+    send
   );
 
   container.append(
@@ -4064,7 +3956,6 @@ function render(){
       mid.append(
         title,
         info,
-        renderPhotos(task.photos),
         discussion
       );
 
