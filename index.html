@@ -1598,18 +1598,26 @@ function setCurrentUser(name){
 
 async function hashPin(pin){
 
-  const data = new TextEncoder().encode(pin);
-  const hash = await crypto.subtle.digest("SHA-256", data);
+  try{
+    if(!window.crypto || !window.crypto.subtle){
+      throw new Error("CRYPTO_UNAVAILABLE");
+    }
 
-  return Array.from(new Uint8Array(hash))
-    .map(b => b.toString(16).padStart(2,"0"))
-    .join("");
+    const data = new TextEncoder().encode(pin);
+    const hash = await window.crypto.subtle.digest("SHA-256", data);
+
+    return Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2,"0"))
+      .join("");
+
+  }catch(error){
+    console.error("WorkBoard PIN - erreur de hachage :", error);
+    throw error;
+  }
 
 }
 
 function profileRef(uid){
-
-  /* Le profil PIN est stocké dans days/__profile__, qui utilise les mêmes règles Firestore que les données WorkBoard. */
 
   return doc(db,"users",uid,"days","__profile__");
 
@@ -1749,8 +1757,20 @@ async function validatePin(){
       return;
     }
 
-    console.error(error);
-    $("pinMsg").textContent = "Erreur lors de la validation du code.";
+    console.error("WorkBoard PIN - validation :", error);
+
+    if(error && error.code === "permission-denied"){
+      $("pinMsg").textContent = "Firebase refuse l'accès au profil PIN. Vérifie les règles Firestore.";
+    }
+    else if(error && error.code === "unavailable"){
+      $("pinMsg").textContent = "Firebase est momentanément indisponible. Réessaie.";
+    }
+    else if(error && error.message === "CRYPTO_UNAVAILABLE"){
+      $("pinMsg").textContent = "Le navigateur ne permet pas de sécuriser le code.";
+    }
+    else{
+      $("pinMsg").textContent = "Erreur lors de la validation du code. Consulte la console (F12) pour le détail.";
+    }
 
   }finally{
 
