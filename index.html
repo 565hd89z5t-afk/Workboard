@@ -753,6 +753,73 @@ button:disabled{
 }
 
 /* ================================================= */
+/* CODE PIN PROFIL */
+/* ================================================= */
+
+#pinModal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#17324d99;
+  z-index:9999;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+
+.pin-card{
+  width:100%;
+  max-width:420px;
+  background:#fff;
+  border-radius:20px;
+  padding:24px;
+  box-shadow:0 12px 40px #17324d40;
+  text-align:center;
+}
+
+.pin-card h2{
+  margin:0 0 8px;
+}
+
+.pin-subtitle{
+  color:#71808c;
+  font-size:14px;
+  margin-bottom:18px;
+}
+
+.pin-avatar{
+  width:70px;
+  height:70px;
+  border-radius:50%;
+  object-fit:cover;
+  margin-bottom:10px;
+}
+
+.pin-input{
+  text-align:center;
+  font-size:28px;
+  letter-spacing:10px;
+  font-weight:700;
+}
+
+.pin-msg{
+  min-height:20px;
+  margin-top:9px;
+  color:#a33b31;
+  font-size:13px;
+}
+
+.pin-actions{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+}
+
+.pin-actions button{
+  flex:1;
+}
+
+/* ================================================= */
 /* RESPONSIVE */
 /* ================================================= */
 
@@ -900,6 +967,52 @@ button:disabled{
       >
       <span>Catherine</span>
     </button>
+
+  </div>
+
+</div>
+
+<!-- ================================================= -->
+<!-- CODE PIN -->
+<!-- ================================================= -->
+
+<div id="pinModal">
+
+  <div class="pin-card">
+
+    <img id="pinAvatar" class="pin-avatar" src="Yannis.png" alt="">
+
+    <h2 id="pinTitle">Code personnel</h2>
+
+    <div id="pinSubtitle" class="pin-subtitle"></div>
+
+    <input
+      id="pinInput"
+      class="pin-input"
+      type="password"
+      inputmode="numeric"
+      autocomplete="off"
+      maxlength="4"
+      placeholder="••••"
+    >
+
+    <input
+      id="pinConfirm"
+      class="pin-input"
+      type="password"
+      inputmode="numeric"
+      autocomplete="off"
+      maxlength="4"
+      placeholder="••••"
+      style="display:none;margin-top:10px"
+    >
+
+    <div id="pinMsg" class="pin-msg"></div>
+
+    <div class="pin-actions">
+      <button id="pinCancel" class="secondary">Annuler</button>
+      <button id="pinSubmit" class="primary">Valider</button>
+    </div>
 
   </div>
 
@@ -1346,6 +1459,7 @@ from
 import {
   getFirestore,
   doc,
+  getDoc,
   onSnapshot,
   runTransaction
 }
@@ -1397,8 +1511,9 @@ let allowEmptyTaskSync = false;
 
 let currentUser = null;
 
-let selectedUser =
-  sessionStorage.getItem("workboardUser") || null;
+let selectedUser = null;
+
+let pinBusy = false;
 
 /* ================================================= */
 /* UTILITAIRE */
@@ -1464,52 +1579,226 @@ new Intl.DateTimeFormat(
 
 function setCurrentUser(name){
 
-  selectedUser =
-    name;
+  selectedUser = name;
 
   sessionStorage.setItem(
     "workboardUser",
     name
   );
 
-  $("currentUserName").textContent =
-    name;
+  $("currentUserName").textContent = name;
 
   updateCurrentUserAvatar();
 
 }
 
 /* ================================================= */
-/* CHOIX UTILISATEUR */
+/* CODE PIN PROFIL */
 /* ================================================= */
+
+async function hashPin(pin){
+
+  const data = new TextEncoder().encode(pin);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2,"0"))
+    .join("");
+
+}
+
+function profileRef(uid){
+
+  return doc(db,"users",uid,"settings","profile");
+
+}
+
+function openPinModal(name){
+
+  selectedUser = name;
+
+  $("pinAvatar").src = getPersonPhoto(name);
+  $("pinAvatar").alt = name;
+  $("pinInput").value = "";
+  $("pinConfirm").value = "";
+  $("pinMsg").textContent = "";
+  $("pinModal").style.display = "flex";
+
+  checkPinStatus(name);
+
+}
+
+async function checkPinStatus(name){
+
+  if(!currentUser){
+    closePinModal();
+    return;
+  }
+
+  try{
+
+    const snap = await getDoc(profileRef(currentUser.uid));
+    const data = snap.exists() ? snap.data() : {};
+    const pinHashes = data.pinHashes || {};
+    const hasPin = typeof pinHashes[name] === "string" && pinHashes[name].length > 0;
+
+    $("pinTitle").textContent = hasPin
+      ? "Entre ton code"
+      : "Crée ton code personnel";
+
+    $("pinSubtitle").textContent = hasPin
+      ? `Code à 4 chiffres pour ${name}`
+      : `Choisis un code à 4 chiffres pour ${name}`;
+
+    $("pinConfirm").style.display = hasPin ? "none" : "block";
+    $("pinConfirm").placeholder = hasPin ? "" : "Confirme le code";
+    $("pinSubmit").textContent = hasPin ? "Déverrouiller" : "Créer le code";
+
+    $("pinInput").focus();
+
+  }catch(error){
+
+    console.error(error);
+    $("pinMsg").textContent = "Impossible de vérifier le code pour le moment.";
+
+  }
+
+}
+
+function closePinModal(){
+
+  $("pinModal").style.display = "none";
+  $("pinInput").value = "";
+  $("pinConfirm").value = "";
+  $("pinMsg").textContent = "";
+  selectedUser = null;
+
+}
+
+async function validatePin(){
+
+  if(pinBusy || !currentUser || !selectedUser) return;
+
+  const pin = $("pinInput").value.trim();
+  const confirmation = $("pinConfirm").value.trim();
+
+  if(!/^\d{4}$/.test(pin)){
+    $("pinMsg").textContent = "Le code doit contenir exactement 4 chiffres.";
+    return;
+  }
+
+  pinBusy = true;
+  $("pinSubmit").disabled = true;
+
+  try{
+
+    const profile = profileRef(currentUser.uid);
+    const snap = await getDoc(profile);
+    const data = snap.exists() ? snap.data() : {};
+    const pinHashes = data.pinHashes || {};
+    const existingHash = pinHashes[selectedUser];
+    const newHash = await hashPin(pin);
+
+    if(typeof existingHash !== "string" || !existingHash){
+
+      if(!/^\d{4}$/.test(confirmation)){
+        $("pinMsg").textContent = "Confirme le code avec 4 chiffres.";
+        return;
+      }
+
+      if(pin !== confirmation){
+        $("pinMsg").textContent = "Les deux codes ne correspondent pas.";
+        return;
+      }
+
+      await runTransaction(db, async transaction => {
+        const fresh = await transaction.get(profile);
+        const freshData = fresh.exists() ? fresh.data() : {};
+        const freshHashes = freshData.pinHashes || {};
+
+        if(typeof freshHashes[selectedUser] === "string" && freshHashes[selectedUser]){
+          throw new Error("PIN_ALREADY_EXISTS");
+        }
+
+        transaction.set(profile,{
+          pinHashes:{...freshHashes,[selectedUser]:newHash},
+          updatedAt:Date.now()
+        },{merge:true});
+      });
+
+      finishPinLogin();
+      return;
+
+    }
+
+    if(newHash !== existingHash){
+      $("pinMsg").textContent = "Code incorrect.";
+      $("pinInput").value = "";
+      $("pinInput").focus();
+      return;
+    }
+
+    finishPinLogin();
+
+  }catch(error){
+
+    if(error.message === "PIN_ALREADY_EXISTS"){
+      $("pinMsg").textContent = "Ce profil vient d'être configuré. Réessaie avec son code.";
+      return;
+    }
+
+    console.error(error);
+    $("pinMsg").textContent = "Erreur lors de la validation du code.";
+
+  }finally{
+
+    pinBusy = false;
+    $("pinSubmit").disabled = false;
+
+  }
+
+}
+
+function finishPinLogin(){
+
+  setCurrentUser(selectedUser);
+  closePinModal();
+  selectedUser = sessionStorage.getItem("workboardUser");
+  showApplication();
+
+  if(currentUser){
+    listen(currentUser.uid);
+  }
+
+}
 
 function showUserChooser(){
 
-  $("login").style.display =
-    "none";
+  if(unsub){
+    unsub();
+    unsub = null;
+  }
 
-  $("app").style.display =
-    "none";
+  tasks = [];
+  notes = [];
+  selectedUser = null;
+  sessionStorage.removeItem("workboardUser");
 
-  $("userChooser").style.display =
-    "block";
+  $("login").style.display = "none";
+  $("app").style.display = "none";
+  $("pinModal").style.display = "none";
+  $("userChooser").style.display = "block";
 
 }
 
 function showApplication(){
 
-  $("login").style.display =
-    "none";
+  $("login").style.display = "none";
+  $("userChooser").style.display = "none";
+  $("pinModal").style.display = "none";
+  $("app").style.display = "block";
 
-  $("userChooser").style.display =
-    "none";
-
-  $("app").style.display =
-    "block";
-
-  $("currentUserName").textContent =
-    selectedUser;
-
+  $("currentUserName").textContent = selectedUser;
   updateCurrentUserAvatar();
 
 }
@@ -1525,26 +1814,31 @@ document
     button.addEventListener(
       "click",
       () => {
-
-        const name =
-          button.dataset.user;
-
-        setCurrentUser(name);
-
-        showApplication();
-
-        if(currentUser){
-
-          listen(
-            currentUser.uid
-          );
-
-        }
-
+        openPinModal(button.dataset.user);
       }
     );
 
   });
+
+$("pinSubmit").onclick = validatePin;
+
+$("pinCancel").onclick = closePinModal;
+
+$("pinInput").addEventListener("input", () => {
+  $("pinInput").value = $("pinInput").value.replace(/\D/g,"").slice(0,4);
+});
+
+$("pinConfirm").addEventListener("input", () => {
+  $("pinConfirm").value = $("pinConfirm").value.replace(/\D/g,"").slice(0,4);
+});
+
+$("pinInput").addEventListener("keydown", e => {
+  if(e.key === "Enter") validatePin();
+});
+
+$("pinConfirm").addEventListener("keydown", e => {
+  if(e.key === "Enter") validatePin();
+});
 
 /* ================================================= */
 /* CHANGER D'UTILISATEUR */
@@ -1782,20 +2076,7 @@ onAuthStateChanged(
     $("status").className =
       "online";
 
-    if(selectedUser){
-
-      showApplication();
-
-      listen(
-        user.uid
-      );
-
-    }
-    else{
-
-      showUserChooser();
-
-    }
+    showUserChooser();
 
   }
 );
