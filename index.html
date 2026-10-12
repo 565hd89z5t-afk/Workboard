@@ -1609,7 +1609,9 @@ async function hashPin(pin){
 
 function profileRef(uid){
 
-  return doc(db,"users",uid,"settings","profile");
+  /* Le profil PIN est stocké dans days/__profile__, qui utilise les mêmes règles Firestore que les données WorkBoard. */
+
+  return doc(db,"users",uid,"days","__profile__");
 
 }
 
