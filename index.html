@@ -1347,7 +1347,6 @@ import {
   getFirestore,
   doc,
   onSnapshot,
-  setDoc,
   runTransaction
 }
 from
@@ -1392,6 +1391,9 @@ let filter = "all";
 let personFilter = "all";
 
 let unsub = null;
+
+/* Autorise temporairement tasks:[] uniquement après une suppression locale de la dernière tâche. */
+let allowEmptyTaskSync = false;
 
 let currentUser = null;
 
@@ -1879,7 +1881,29 @@ function listen(uid){
 
           if(Array.isArray(data.tasks)){
 
-            tasks = data.tasks;
+            /*
+             * SECURITE RENFORCEE : une version ancienne de WorkBoard ne doit
+             * pas pouvoir vider l'affichage d'une version récente simplement
+             * en envoyant tasks:[] sur un document déjà rempli.
+             * Une liste vide n'est acceptée que si l'application vient
+             * elle-même de supprimer la dernière tâche.
+             */
+            if(data.tasks.length === 0 && tasks.length > 0 && !allowEmptyTaskSync){
+
+              console.warn(
+                "WorkBoard : réception d'un tasks:[] suspect, tâches locales conservées."
+              );
+
+            }
+            else{
+
+              tasks = data.tasks;
+
+              if(data.tasks.length === 0){
+                allowEmptyTaskSync = false;
+              }
+
+            }
 
           }
           else{
@@ -1939,22 +1963,12 @@ function listen(uid){
 
         renderNotes();
 
-        if(!snapshot.exists()){
-
-          setDoc(
-            ref(uid),
-            {
-              tasks:[],
-              notes:[],
-              date:day,
-              updatedAt:Date.now()
-            },
-            {
-              merge:true
-            }
-          );
-
-        }
+        /*
+         * Ne jamais créer automatiquement un document vide au chargement.
+         * Le document sera créé par une vraie action de l'utilisateur
+         * (ajout d'une tâche ou d'une note). Cela évite qu'une ouverture
+         * de WorkBoard puisse écraser ou réinitialiser la journée.
+         */
 
       },
 
@@ -2063,6 +2077,8 @@ async function addTaskSafely(task){
 
       }
 
+      allowEmptyTaskSync = false;
+
       transaction.set(
         taskRef,
         {
@@ -2155,6 +2171,8 @@ async function updateTaskSafely(
         "modification"
       );
 
+      allowEmptyTaskSync = (newTasks.length === 0);
+
       transaction.set(
         taskRef,
         {
@@ -2222,6 +2240,8 @@ async function deleteTaskSafely(id){
         newTasks,
         "suppression"
       );
+
+      allowEmptyTaskSync = (newTasks.length === 0);
 
       transaction.set(
         taskRef,
@@ -2871,9 +2891,15 @@ async function addCommentSafely(
         snap.data();
 
       const currentTasks =
-        Array.isArray(data.tasks)
-          ? data.tasks
-          : [];
+        safeTasksFromData(data);
+
+      if(currentTasks === null){
+
+        throw new Error(
+          "Impossible d'ajouter le commentaire : le champ tasks est absent ou invalide."
+        );
+
+      }
 
       const index =
         currentTasks.findIndex(
@@ -2910,6 +2936,14 @@ async function addCommentSafely(
               ? task
               : item
         );
+
+      blockAccidentalTaskWipe(
+        currentTasks,
+        newTasks,
+        "commentaire"
+      );
+
+      allowEmptyTaskSync = false;
 
       transaction.set(
         taskRef,
