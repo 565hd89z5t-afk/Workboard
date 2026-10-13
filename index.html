@@ -1460,6 +1460,8 @@ import {
   getFirestore,
   doc,
   getDoc,
+  getDocs,
+  collection,
   onSnapshot,
   runTransaction
 }
@@ -2108,15 +2110,51 @@ onAuthStateChanged(
 /* ================================================= */
 
 function ref(uid){
+  // Document unique et permanent : les tâches ne sont plus séparées par jour.
+  return doc(db,"users",uid,"days","workboard_tasks");
+}
 
-  return doc(
-    db,
-    "users",
-    uid,
-    "days",
-    day
-  );
+// Migration unique des anciennes journées vers le document permanent.
+async function preparePersistentTasks(uid){
+  const target = ref(uid);
+  const targetSnap = await getDoc(target);
+  if(targetSnap.exists() && Array.isArray(targetSnap.data().tasks)) return;
 
+  const daysSnap = await getDocs(collection(db,"users",uid,"days"));
+  const byId = new Map();
+  const oldNotes = [];
+
+  daysSnap.forEach(dayDoc => {
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(dayDoc.id)) return;
+    const data = dayDoc.data() || {};
+    if(Array.isArray(data.tasks)){
+      data.tasks.forEach(task => {
+        if(!task || typeof task !== "object") return;
+        const item = {...task};
+        if(!item.id) item.id = crypto.randomUUID();
+        if(item.done && !Number.isFinite(item.completedAt)) item.completedAt = Date.now();
+        if(!byId.has(item.id)) byId.set(item.id,item);
+        else {
+          const prior = byId.get(item.id);
+          const comments = new Map();
+          [...(Array.isArray(prior.comments)?prior.comments:[]),...(Array.isArray(item.comments)?item.comments:[])].forEach(c=>{if(c && c.id) comments.set(c.id,c);});
+          const latest = (item.updatedAt || 0) >= (prior.updatedAt || 0) ? item : prior;
+          latest.comments = [...comments.values()];
+          byId.set(item.id,latest);
+        }
+      });
+    }
+    if(Array.isArray(data.notes)) oldNotes.push(...data.notes);
+    else if(typeof data.notes === "string" && data.notes.trim()) oldNotes.push({id:crypto.randomUUID(),author:"Utilisateur",text:data.notes,createdAt:Date.now()});
+  });
+
+  const cutoff = Date.now() - 7*24*60*60*1000;
+  const migratedTasks = [...byId.values()].filter(t=>!t.done || (Number.isFinite(t.completedAt) && t.completedAt>=cutoff));
+  await runTransaction(db,async transaction=>{
+    const fresh=await transaction.get(target);
+    if(fresh.exists() && Array.isArray(fresh.data().tasks)) return;
+    transaction.set(target,{tasks:migratedTasks,notes:oldNotes,date:day,updatedAt:Date.now(),migratedFromDailyDocs:true},{merge:true});
+  });
 }
 
 /* ================================================= */
@@ -2159,7 +2197,17 @@ function normalizeComments(task){
 /* ECOUTE FIRESTORE */
 /* ================================================= */
 
-function listen(uid){
+async function listen(uid){
+
+  try{
+    await preparePersistentTasks(uid);
+  }catch(error){
+    console.error("Migration des tâches impossible :",error);
+    $("status").innerHTML = '<span class="dot"></span>Erreur de chargement des tâches';
+    $("status").className = "";
+    alert("Impossible de charger les tâches enregistrées. Aucune donnée ancienne n’a été supprimée. Vérifie la connexion puis réessaie.");
+    return;
+  }
 
   if(unsub)
     unsub();
@@ -2174,6 +2222,23 @@ function listen(uid){
           snapshot.exists()
             ? snapshot.data()
             : {};
+
+        const cutoff = Date.now() - 7*24*60*60*1000;
+        const incomingTasks = Array.isArray(data.tasks) ? data.tasks : [];
+        const retainedTasks = incomingTasks.filter(task =>
+          !task.done || (Number.isFinite(task.completedAt) && task.completedAt >= cutoff)
+        );
+        if(Array.isArray(data.tasks) && retainedTasks.length !== data.tasks.length){
+          runTransaction(db,async transaction=>{
+            const fresh=await transaction.get(ref(uid));
+            if(!fresh.exists() || !Array.isArray(fresh.data().tasks)) return;
+            const current=fresh.data().tasks;
+            const stillRetained=current.filter(task=>
+              !task.done || (Number.isFinite(task.completedAt) && task.completedAt>=cutoff)
+            );
+            transaction.set(ref(uid),{tasks:stillRetained,updatedAt:Date.now()},{merge:true});
+          }).catch(error=>console.error("Nettoyage des tâches anciennes impossible :",error));
+        }
 
         /*
          * SECURITE : ne jamais remplacer les tâches affichées par []
@@ -2200,9 +2265,9 @@ function listen(uid){
             }
             else{
 
-              tasks = data.tasks;
+              tasks = retainedTasks;
 
-              if(data.tasks.length === 0){
+              if(retainedTasks.length === 0){
                 allowEmptyTaskSync = false;
               }
 
@@ -2612,6 +2677,8 @@ $("add").onclick =
         selectedPeople,
 
       done:false,
+
+      createdAt:Date.now(),
 
       comments:[]
 
@@ -3591,10 +3658,13 @@ async function toggle(id){
 
   await updateTaskSafely(
     id,
-    task => ({
-      ...task,
-      done:!task.done
-    })
+    task => {
+      const nowDone = !task.done;
+      const updated = {...task,done:nowDone};
+      if(nowDone) updated.completedAt = Date.now();
+      else delete updated.completedAt;
+      return updated;
+    }
   );
 
 }
