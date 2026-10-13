@@ -2875,18 +2875,6 @@ async function deleteNoteSafely(noteId){
       if(!note)
         return;
 
-      if(
-        note.author !== selectedUser
-      ){
-
-        console.warn(
-          "Suppression refusée : cette note n'appartient pas à l'utilisateur connecté."
-        );
-
-        return;
-
-      }
-
       const newNotes =
         currentNotes.filter(
           item => item.id !== noteId
@@ -3095,9 +3083,7 @@ function renderNotes(){
         date
       );
 
-      if(
-        note.author === selectedUser
-      ){
+      {
 
         const deleteButton =
           document.createElement(
@@ -3111,14 +3097,14 @@ function renderNotes(){
           "🗑️";
 
         deleteButton.title =
-          "Supprimer ma note";
+          "Supprimer cette note";
 
         deleteButton.onclick =
           async () => {
 
             if(
               !confirm(
-                "Supprimer cette note ?"
+                "Supprimer cette note, même si elle a été écrite par quelqu’un d’autre ?"
               )
             )
               return;
